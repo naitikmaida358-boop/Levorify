@@ -221,6 +221,7 @@
   </main>
 
   <script>
+    const API_BASE_URL = 'https://levorify.onrender.com';
     let authToken = localStorage.getItem('levorify_token') || '';
     let isRegisterMode = false;
     let currentUser = null;
@@ -240,7 +241,7 @@
 
     async function bootstrapSession() {
       try {
-        const res = await fetch('/api/v1/auth/me', {
+        const res = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
           headers: { 'Authorization': `Bearer ${authToken}` }
         });
         if (res.ok) {
@@ -286,7 +287,9 @@
       const password = document.getElementById('password').value;
       const brandName = document.getElementById('brand-name')?.value.trim() || '';
 
-      const endpoint = isRegisterMode ? '/api/v1/auth/register' : '/api/v1/auth/token';
+      const endpoint = isRegisterMode 
+        ? `${API_BASE_URL}/api/v1/auth/register` 
+        : `${API_BASE_URL}/api/v1/auth/token`;
 
       try {
         let res;
@@ -374,7 +377,7 @@
       const apiKey = document.getElementById('api-key-input').value.trim();
 
       try {
-        const res = await fetch('/api/v1/keys/configure', {
+        const res = await fetch(`${API_BASE_URL}/api/v1/keys/configure`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -396,7 +399,7 @@
 
     async function fetchKeyStatus() {
       try {
-        const res = await fetch('/api/v1/keys/status?provider=gemini', {
+        const res = await fetch(`${API_BASE_URL}/api/v1/keys/status?provider=gemini`, {
           headers: { 'Authorization': `Bearer ${authToken}` }
         });
         if (res.ok) {
@@ -466,7 +469,7 @@
       logToTerminal(`[TUNNEL] Decrypting merchant BYOK Gemini credentials in memory...`);
 
       try {
-        const res = await fetch('/api/v1/tools/execute', {
+        const res = await fetch(`${API_BASE_URL}/api/v1/tools/execute`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
