@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Levorify OS | Sovereign Merchant Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'], mono: ['"JetBrains Mono"', 'monospace'] },
+          colors: {
+            slateNavy: { 950: '#070b14', 900: '#0b101d', 850: '#0f172a', 800: '#151f38' },
+            cyan: { neon: '#00f2fe', bright: '#22d3ee' },
+            indigo: { neon: '#4facfe', vibrant: '#6366f1' }
+          },
+          boxShadow: { 'glow-cyan': '0 0 35px -10px rgba(0, 242, 254, 0.25)' }
+        }
+      }
+    }
+  </script>
+  <style>
+    .glass-panel {
+      background: rgba(13, 19, 32, 0.75);
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 16px 36px -12px rgba(2, 6, 23, 0.7);
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #070b14;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="bg-slateNavy-950 text-slate-100 font-sans antialiased min-h-screen">
+
+  <!-- Dashboard Navigation -->
+  <header class="border-b border-white/[0.06] bg-slateNavy-950/80 backdrop-blur-xl sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <a href="/landing" class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-neon to-indigo-vibrant p-[1px] shadow-glow-cyan flex items-center justify-center">
+          <div class="w-full h-full bg-slateNavy-950 rounded-[11px] flex items-center justify-center font-black text-cyan-neon hover:scale-105 transition-transform">L</div>
+        </a>
+        <div class="flex flex-col">
+          <div class="flex items-center gap-2">
+            <span class="text-xl font-black tracking-tighter text-white">LEVORIFY<span class="text-cyan-neon">.</span>OS</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wider bg-cyan-neon/10 text-cyan-bright border border-cyan-neon/20">Sovereign v1.0</span>
+          </div>
+          <span class="text-[10px] font-mono text-slate-500">Autonomous D2C Merchant Cloud</span>
+        </div>
+      </div>
+      <div id="user-session-info" class="flex items-center gap-4 text-xs font-mono text-slate-400">
+        <div class="flex items-center gap-2">
+          <div id="node-indicator" class="w-2 h-2 rounded-full bg-rose-500"></div>
+          <span id="nav-email" class="text-slate-400">Node Offline</span>
+        </div>
+        <button id="disconnect-btn" onclick="logout()" class="hidden px-3 py-1.5 rounded-lg border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 transition-colors">Disconnect</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-6 py-10">
+
+    <!-- Auth View (Shown if not logged in) -->
+    <div id="auth-section" class="max-w-md mx-auto glass-panel p-8 rounded-3xl mt-8">
+      <div class="w-12 h-12 rounded-2xl bg-cyan-neon/10 border border-cyan-neon/30 flex items-center justify-center mb-4 text-cyan-neon text-xl font-black">
+        ⚡
+      </div>
+      <h2 id="auth-heading" class="text-2xl font-black text-white mb-2">Access Sovereign Node</h2>
+      <p id="auth-subheading" class="text-xs text-slate-400 mb-6">Authenticate to mount your encrypted BYOK session.</p>
+      <form id="auth-form" onsubmit="handleAuth(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-mono text-slate-400 mb-1">OPERATOR EMAIL</label>
+          <input type="email" id="email" required placeholder="operator@brand.com" class="w-full bg-slateNavy-900 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-cyan-neon outline-none transition-colors">
+        </div>
+        <div>
+          <label class="block text-xs font-mono text-slate-400 mb-1">SECURE PASSWORD</label>
+          <input type="password" id="password" required placeholder="••••••••••••" class="w-full bg-slateNavy-900 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-cyan-neon outline-none transition-colors">
+        </div>
+        <div id="register-fields" class="hidden space-y-4">
+          <div>
+            <label class="block text-xs font-mono text-slate-400 mb-1">BRAND / STORE NAME</label>
+            <input type="text" id="brand-name" placeholder="e.g. Vance Apparel" class="w-full bg-slateNavy-900 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-cyan-neon outline-none transition-colors">
+          </div>
+        </div>
+        <button type="submit" id="auth-submit-btn" class="w-full py-3.5 rounded-xl font-black text-xs uppercase tracking-wider bg-gradient-to-r from-cyan-neon to-indigo-neon text-slateNavy-950 shadow-glow-cyan hover:opacity-90 transition-all">
+          Initialize Session
+        </button>
+      </form>
+      <div class="mt-4 text-center">
+        <button onclick="toggleAuthMode()" id="auth-toggle-btn" class="text-xs text-cyan-bright hover:underline font-mono">Need an account? Register node</button>
+      </div>
+    </div>
+
+    <!-- Dashboard View (Shown after login) -->
+    <div id="dashboard-section" class="hidden space-y-8">
+      
+      <!-- Top Grid: BYOK Vault Settings -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="glass-panel p-6 rounded-2xl lg:col-span-1 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <h3 class="text-lg font-bold text-white">BYOK Vault</h3>
+              <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">AES-128 Fernet</span>
+            </div>
+            <p class="text-xs text-slate-400 mb-6">Link your zero-cost Google Gemini API key to operate engines with zero markups.</p>
+            
+            <form onsubmit="saveApiKey(event)" class="space-y-4">
+              <div>
+                <label class="block text-xs font-mono text-slate-400 mb-1">GEMINI API KEY</label>
+                <input type="password" id="api-key-input" placeholder="AIzaSy..." required class="w-full bg-slateNavy-900 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-cyan-neon outline-none font-mono transition-colors">
+              </div>
+              <button type="submit" class="w-full py-3 rounded-xl font-bold text-xs uppercase tracking-wider bg-slateNavy-800 border border-cyan-neon/30 text-cyan-bright hover:bg-cyan-neon/10 transition-all">
+                Commit Encrypted Key
+              </button>
+            </form>
+          </div>
+          
+          <div id="key-status" class="mt-6 p-3.5 rounded-xl bg-slateNavy-900/80 border border-white/5 text-xs font-mono text-slate-400 flex items-center justify-between">
+            <span>Status: <span id="key-status-text" class="text-amber-400">No active key linked</span></span>
+            <span class="text-[10px] text-slate-500">Gemini 1.5 Pro/Flash</span>
+          </div>
+        </div>
+
+        <!-- Tool Execution Console -->
+        <div class="glass-panel p-6 rounded-2xl lg:col-span-2 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <h3 class="text-lg font-bold text-white">Autonomous Engine Dispatch</h3>
+              <span class="text-[11px] font-mono text-cyan-bright">20 Sovereign Protocols</span>
+            </div>
+            <p class="text-xs text-slate-400 mb-4">Run live D2C optimization protocols using your secure node credentials.</p>
+            
+            <div class="space-y-4">
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="block text-xs font-mono text-slate-400">SELECT MODULE</label>
+                  <div class="flex gap-2">
+                    <button type="button" onclick="loadSamplePreset('rto_shield')" class="text-[10px] font-mono text-cyan-bright hover:underline">Sample RTO</button>
+                    <span class="text-slate-600">|</span>
+                    <button type="button" onclick="loadSamplePreset('bundling')" class="text-[10px] font-mono text-cyan-bright hover:underline">Sample Bundle</button>
+                    <span class="text-slate-600">|</span>
+                    <button type="button" onclick="loadSamplePreset('research')" class="text-[10px] font-mono text-cyan-bright hover:underline">Sample Scout</button>
+                  </div>
+                </div>
+                <select id="tool-type" onchange="handleModuleChange()" class="w-full bg-slateNavy-900 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-cyan-neon outline-none">
+                  <option value="rto_shield">Tool #8: RTO & COD Risk Shield (Fraud & Return Mitigation)</option>
+                  <option value="bundling">Tool #2: Dynamic AOV Bundling Matrix (Algorithmic Margin Capture)</option>
+                  <option value="research">Tool #14: Alpha Product Trend Scout (Arbitrage & Sourcing Heat)</option>
+                  <option value="product-description">Tool #1: High-Velocity Sensory Product Copy (Conversion Engine)</option>
+                  <option value="ad-copy">Tool #5: Omni-Channel ROAS Ad Matrix (Meta, Google, TikTok)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-mono text-slate-400 mb-1">OPERATION PROMPT / TELEMETRY PARAMETERS</label>
+                <textarea id="tool-prompt" rows="3" placeholder="Enter target SKU data or telemetry parameters..." class="w-full bg-slateNavy-900 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-cyan-neon outline-none font-mono"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6 flex flex-wrap items-center justify-between gap-4">
+            <button id="execute-btn" onclick="runTool()" class="px-6 py-3 rounded-xl font-black text-xs uppercase tracking-wider bg-gradient-to-r from-cyan-neon to-indigo-neon text-slateNavy-950 shadow-glow-cyan hover:opacity-90 active:scale-95 transition-all">
+              Execute Engine ➔
+            </button>
+            <div class="flex items-center gap-2">
+              <span id="execution-spinner" class="hidden animate-spin text-cyan-neon font-mono">⟳</span>
+              <span id="execution-status" class="text-xs font-mono text-slate-400">Ready for dispatch</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Execution Output & Terminal -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Live Structured Result Card -->
+        <div class="glass-panel p-6 rounded-2xl flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-sm font-mono text-slate-400 uppercase tracking-widest">Structured Protocol Result</h3>
+              <button onclick="copyResult()" class="text-xs font-mono text-cyan-bright hover:underline">Copy Result</button>
+            </div>
+            <div id="formatted-output" class="custom-scroll w-full h-56 bg-slateNavy-950 p-4 rounded-xl border border-white/5 font-sans text-xs text-slate-200 overflow-y-auto whitespace-pre-wrap leading-relaxed">
+              Autonomous outputs will be parsed and rendered here upon execution...
+            </div>
+          </div>
+          <div class="mt-3 flex items-center justify-between text-[11px] font-mono text-slate-500">
+            <span id="meta-model">Model: Idle</span>
+            <span id="meta-latency">Latency: -- ms</span>
+          </div>
+        </div>
+
+        <!-- Telemetry & Raw Event Log Terminal -->
+        <div class="glass-panel p-6 rounded-2xl">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-mono text-slate-400 uppercase tracking-widest">Live Telemetry & Execution Log</h3>
+            <button onclick="clearTerminal()" class="text-xs font-mono text-slate-500 hover:text-slate-300">Clear</button>
+          </div>
+          <pre id="terminal-output" class="custom-scroll w-full h-56 bg-slateNavy-950 p-4 rounded-xl border border-white/5 font-mono text-xs text-cyan-bright overflow-y-auto leading-relaxed">System initialized. Awaiting sovereign operator dispatch...</pre>
+          <div class="mt-3 flex items-center justify-between text-[11px] font-mono text-slate-500">
+            <span>Secure BYOK Tunnel: Verified</span>
+            <span>Encryption: Active</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <script>
+    let authToken = localStorage.getItem('levorify_token') || '';
+    let isRegisterMode = false;
+    let currentUser = null;
+
+    const samplePresets = {
+      rto_shield: "Order Telemetry: PIN 110025 (New Delhi), Payment Method: COD, Cart Value: ₹3,850, SKU: Sovereign Leather Duffel, Customer History: 1 previous cancel, Time of Order: 02:40 AM. Assess RTO risk & suggest action.",
+      bundling: "Primary Product: Lumina Hydro-Serum (₹1,499, 78% margin). Cross-sell Candidates: Ceramide Barrier Mist (₹799), Peptide Night Recovery Cream (₹1,899). Design tiered high-AOV bundle architecture.",
+      research: "Product Category: High-end ergonomic titanium desk accessories. Sourcing target: Under $12 landed. Current market retail: $48-$75. Analyze trend velocity, viral hooks, and validation sprint.",
+      "product-description": "Product: Sovereign Obsidian Cold Brew Tumbler (Vacuum insulated, titanium-coated double wall, 24-hr ice lock, leakproof magnetic lid). Target audience: Tech executives & remote founders.",
+      "ad-copy": "Product: Lumina Hydro-Serum. Offer: Launch 20% off with code SOVEREIGN20. Target: Premium skincare buyers tired of sticky hyaluronic acid formulas. Channels: Meta, Google, TikTok."
+    };
+
+    // Auto-bootstrap on load
+    if (authToken) {
+      bootstrapSession();
+    }
+
+    async function bootstrapSession() {
+      try {
+        const res = await fetch('/api/v1/auth/me', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.ok) {
+          currentUser = await res.json();
+          showDashboard();
+        } else {
+          // Token expired or invalid
+          logout();
+        }
+      } catch (err) {
+        console.error('Session bootstrap failed', err);
+        logout();
+      }
+    }
+
+    function toggleAuthMode() {
+      isRegisterMode = !isRegisterMode;
+      const toggleBtn = document.getElementById('auth-toggle-btn');
+      const submitBtn = document.getElementById('auth-submit-btn');
+      const heading = document.getElementById('auth-heading');
+      const subheading = document.getElementById('auth-subheading');
+      const registerFields = document.getElementById('register-fields');
+
+      if (isRegisterMode) {
+        heading.innerText = 'Register Sovereign Node';
+        subheading.innerText = 'Create operator credentials to initialize your private merchant enclave.';
+        submitBtn.innerText = 'Register & Provision Node';
+        toggleBtn.innerText = 'Already have node? Login here';
+        registerFields.classList.remove('hidden');
+      } else {
+        heading.innerText = 'Access Sovereign Node';
+        subheading.innerText = 'Authenticate to mount your encrypted BYOK session.';
+        submitBtn.innerText = 'Initialize Session';
+        toggleBtn.innerText = 'Need an account? Register node';
+        registerFields.classList.remove('hidden');
+        registerFields.classList.add('hidden');
+      }
+    }
+
+    async function handleAuth(event) {
+      event.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const brandName = document.getElementById('brand-name')?.value.trim() || '';
+
+      const endpoint = isRegisterMode ? '/api/v1/auth/register' : '/api/v1/auth/token';
+
+      try {
+        let res;
+        if (isRegisterMode) {
+          res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: email,
+              password: password,
+              brand_name: brandName || undefined
+            })
+          });
+        } else {
+          const formData = new URLSearchParams();
+          formData.append('username', email);
+          formData.append('password', password);
+          res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: formData
+          });
+        }
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Authentication failed');
+
+        if (!isRegisterMode) {
+          authToken = data.access_token;
+          currentUser = data.user;
+          localStorage.setItem('levorify_token', authToken);
+          showDashboard();
+        } else {
+          alert('Node registered successfully! Authenticating session...');
+          toggleAuthMode();
+          // Auto-fill and submit login
+          document.getElementById('email').value = email;
+          document.getElementById('password').value = password;
+          document.getElementById('auth-form').dispatchEvent(new Event('submit'));
+        }
+      } catch (err) {
+        alert('Authentication Error: ' + err.message);
+      }
+    }
+
+    function showDashboard() {
+      document.getElementById('auth-section').classList.add('hidden');
+      document.getElementById('dashboard-section').classList.remove('hidden');
+      document.getElementById('disconnect-btn').classList.remove('hidden');
+
+      const indicator = document.getElementById('node-indicator');
+      indicator.classList.remove('bg-rose-500');
+      indicator.classList.add('bg-emerald-400');
+
+      const navEmail = document.getElementById('nav-email');
+      if (currentUser && currentUser.email) {
+        navEmail.innerHTML = `<span class="text-cyan-bright font-semibold">${currentUser.email}</span>${currentUser.brand_name ? ` <span class="text-slate-500">(${currentUser.brand_name})</span>` : ''}`;
+      } else {
+        navEmail.innerText = 'Node Online';
+      }
+
+      // Load initial preset
+      handleModuleChange();
+      fetchKeyStatus();
+    }
+
+    function logout() {
+      localStorage.removeItem('levorify_token');
+      authToken = '';
+      currentUser = null;
+      document.getElementById('dashboard-section').classList.add('hidden');
+      document.getElementById('auth-section').classList.remove('hidden');
+      document.getElementById('disconnect-btn').classList.add('hidden');
+
+      const indicator = document.getElementById('node-indicator');
+      indicator.classList.remove('bg-emerald-400');
+      indicator.classList.add('bg-rose-500');
+
+      document.getElementById('nav-email').innerText = 'Node Offline';
+      document.getElementById('nav-email').className = 'text-slate-400';
+    }
+
+    async function saveApiKey(event) {
+      event.preventDefault();
+      const apiKey = document.getElementById('api-key-input').value.trim();
+
+      try {
+        const res = await fetch('/api/v1/keys/configure', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ api_key: apiKey, provider: 'gemini' })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Failed to save key');
+
+        document.getElementById('key-status-text').innerHTML = `<span class="text-emerald-400 font-semibold">Active (${data.masked_key})</span>`;
+        document.getElementById('api-key-input').value = '';
+        logToTerminal(`[KEY VAULT] Encrypted key committed. Hint: ${data.masked_key}`);
+        alert('API key successfully encrypted with Fernet and vaulted.');
+      } catch (err) {
+        alert('Error: ' + err.message);
+      }
+    }
+
+    async function fetchKeyStatus() {
+      try {
+        const res = await fetch('/api/v1/keys/status?provider=gemini', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.has_key) {
+            document.getElementById('key-status-text').innerHTML = `<span class="text-emerald-400 font-semibold">Active (${data.masked_key})</span>`;
+          } else {
+            document.getElementById('key-status-text').innerHTML = `<span class="text-amber-400">No active key linked</span>`;
+          }
+        }
+      } catch (e) {
+        console.error('Failed to fetch key status', e);
+      }
+    }
+
+    function handleModuleChange() {
+      const toolType = document.getElementById('tool-type').value;
+      const promptEl = document.getElementById('tool-prompt');
+      if (!promptEl.value.trim() || Object.values(samplePresets).includes(promptEl.value.trim())) {
+        loadSamplePreset(toolType);
+      }
+    }
+
+    function loadSamplePreset(moduleKey) {
+      const select = document.getElementById('tool-type');
+      select.value = moduleKey;
+      document.getElementById('tool-prompt').value = samplePresets[moduleKey] || '';
+    }
+
+    function logToTerminal(msg) {
+      const term = document.getElementById('terminal-output');
+      term.innerHTML += `\n> ${msg}`;
+      term.scrollTop = term.scrollHeight;
+    }
+
+    function clearTerminal() {
+      document.getElementById('terminal-output').innerText = 'Terminal reset. System ready.';
+    }
+
+    function copyResult() {
+      const content = document.getElementById('formatted-output').innerText;
+      navigator.clipboard.writeText(content).then(() => {
+        alert('Result copied to clipboard.');
+      });
+    }
+
+    async function runTool() {
+      const toolType = document.getElementById('tool-type').value;
+      const prompt = document.getElementById('tool-prompt').value.trim();
+      const status = document.getElementById('execution-status');
+      const spinner = document.getElementById('execution-spinner');
+      const execBtn = document.getElementById('execute-btn');
+      const formattedOutput = document.getElementById('formatted-output');
+
+      if (!prompt) {
+        alert('Please enter telemetry parameters or a prompt.');
+        return;
+      }
+
+      status.innerText = 'Executing sovereign engine...';
+      status.className = 'text-xs font-mono text-cyan-bright animate-pulse';
+      spinner.classList.remove('hidden');
+      execBtn.disabled = true;
+      execBtn.classList.add('opacity-60');
+
+      logToTerminal(`[DISPATCH] Launching module: ${toolType}`);
+      logToTerminal(`[TUNNEL] Decrypting merchant BYOK Gemini credentials in memory...`);
+
+      try {
+        const res = await fetch('/api/v1/tools/execute', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ tool_name: toolType, prompt: prompt })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || 'Execution failed');
+
+        // Render structured output
+        formattedOutput.innerText = data.result;
+        document.getElementById('meta-model').innerText = `Model: ${data.model || 'Gemini 1.5'}`;
+        document.getElementById('meta-latency').innerText = `Latency: ${data.latency_ms?.toFixed(1) || '--'} ms`;
+
+        logToTerminal(`[SUCCESS] Execution completed in ${data.latency_ms?.toFixed(1) || 0}ms.`);
+        status.innerText = 'Execution completed successfully.';
+        status.className = 'text-xs font-mono text-emerald-400';
+      } catch (err) {
+        logToTerminal(`[ERROR] ${err.message}`);
+        status.innerText = 'Execution failed.';
+        status.className = 'text-xs font-mono text-rose-400';
+      } finally {
+        spinner.classList.add('hidden');
+        execBtn.disabled = false;
+        execBtn.classList.remove('opacity-60');
+      }
+    }
+  </script>
+</body>
+</html>
