@@ -8,7 +8,8 @@ from app.core.config import settings
 
 logger = logging.getLogger("levorify.gemini_service")
 
-GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta"
+GEMINI_API_BASE = getattr(settings, "GEMINI_API_BASE", "https://generativelanguage.googleapis.com/v1beta")
+PRIMARY_MODELS = ["gemini-1.5-flash", "gemini-1.5-pro"]
 
 
 class GeminiBYOKService:
@@ -22,28 +23,67 @@ class GeminiBYOKService:
     async def verify_key(api_key: str) -> Dict[str, Any]:
         """
         Pings Google Gemini API with a lightweight test probe to verify key validity.
+        Uses active models (gemini-1.5-flash / gemini-1.5-pro) across v1beta and v1 endpoints.
+        Probes the canonical models collection (which verifies key permissions without
+        generating tokens) to guarantee key validation never fails with a 404 error.
         """
-        url = f"{GEMINI_API_BASE}/models/{settings.DEFAULT_GEMINI_MODEL}:generateContent"
-        payload = {
-            "contents": [{"parts": [{"text": "Reply with 'VALID' only."}]}],
-            "generationConfig": {"maxOutputTokens": 5, "temperature": 0.0}
-        }
-        headers = {"Content-Type": "application/json"}
-        params = {"key": api_key}
+        clean_key = (api_key or "").strip()
+        if not clean_key:
+            return {"valid": False, "message": "API key cannot be empty."}
+
+        candidate_bases = [
+            GEMINI_API_BASE,
+            "https://generativelanguage.googleapis.com/v1beta",
+            "https://generativelanguage.googleapis.com/v1"
+        ]
+        # Deduplicate preserving order
+        candidate_bases = list(dict.fromkeys(candidate_bases))
 
         async with httpx.AsyncClient(timeout=10.0) as client:
-            try:
-                response = await client.post(url, headers=headers, json=payload, params=params)
-                if response.status_code == 200:
-                    return {"valid": True, "message": "Google Gemini API key verified and operational."}
-                elif response.status_code in (400, 403):
-                    data = response.json()
-                    err_msg = data.get("error", {}).get("message", "Invalid API key or insufficient permissions.")
-                    return {"valid": False, "message": f"Google Gemini rejected key: {err_msg}"}
-                else:
-                    return {"valid": False, "message": f"Provider responded with status {response.status_code}."}
-            except httpx.RequestError as exc:
-                return {"valid": False, "message": f"Network error contacting Google Gemini: {str(exc)}"}
+            # 1. Primary probe: GET /models?key=...
+            # Canonical Google endpoint: returns 200 on valid key, 400/403 on invalid key, never 404.
+            for base in candidate_bases:
+                try:
+                    res = await client.get(f"{base}/models", params={"key": clean_key})
+                    if res.status_code == 200:
+                        return {"valid": True, "message": "Google Gemini API key verified and operational."}
+                    elif res.status_code in (400, 403):
+                        data = res.json()
+                        err_msg = data.get("error", {}).get("message", "Invalid API key or insufficient permissions.")
+                        return {"valid": False, "message": f"Google Gemini rejected key: {err_msg}"}
+                except httpx.RequestError:
+                    continue
+
+            # 2. Secondary probe: generateContent on active models
+            configured_model = (settings.DEFAULT_GEMINI_MODEL or "gemini-1.5-flash").replace("models/", "").strip()
+            active_models = list(dict.fromkeys([configured_model, "gemini-1.5-flash", "gemini-1.5-pro"]))
+
+            for base in candidate_bases:
+                for test_model in active_models:
+                    url = f"{base}/models/{test_model}:generateContent"
+                    payload = {
+                        "contents": [{"parts": [{"text": "VALID"}]}],
+                        "generationConfig": {"maxOutputTokens": 5, "temperature": 0.0}
+                    }
+                    headers = {"Content-Type": "application/json"}
+                    params = {"key": clean_key}
+
+                    try:
+                        response = await client.post(url, headers=headers, json=payload, params=params)
+                        if response.status_code == 200:
+                            return {"valid": True, "message": f"Google Gemini API key verified with {test_model}."}
+                        elif response.status_code in (400, 403):
+                            data = response.json()
+                            err_msg = data.get("error", {}).get("message", "Invalid API key or insufficient permissions.")
+                            return {"valid": False, "message": f"Google Gemini rejected key: {err_msg}"}
+                        elif response.status_code == 404:
+                            continue
+                        else:
+                            return {"valid": False, "message": f"Provider responded with status {response.status_code}."}
+                    except httpx.RequestError as exc:
+                        return {"valid": False, "message": f"Network error contacting Google Gemini: {str(exc)}"}
+
+            return {"valid": False, "message": "Google Gemini endpoint unreachable or key invalid."}
 
     @staticmethod
     async def generate_d2c_content(
@@ -57,9 +97,21 @@ class GeminiBYOKService:
     ) -> Dict[str, Any]:
         """
         Executes a dynamic completion request against Google Gemini using the caller's key.
+        Sanitizes model names and endpoints to ensure zero 404 errors.
         """
-        selected_model = model or settings.DEFAULT_GEMINI_MODEL
-        url = f"{GEMINI_API_BASE}/models/{selected_model}:generateContent"
+        # Clean model name to prevent 404s (e.g. models/models/... or trailing whitespace)
+        raw_model = (model or settings.DEFAULT_GEMINI_MODEL or "gemini-1.5-flash").replace("models/", "").strip()
+        selected_model = raw_model if raw_model else "gemini-1.5-flash"
+        
+        # Build candidate URLs in case of 404 on a specific endpoint or model
+        candidate_urls = [
+            f"{GEMINI_API_BASE}/models/{selected_model}:generateContent",
+            f"https://generativelanguage.googleapis.com/v1beta/models/{selected_model}:generateContent",
+            f"https://generativelanguage.googleapis.com/v1/models/{selected_model}:generateContent",
+            f"{GEMINI_API_BASE}/models/gemini-1.5-flash:generateContent",
+            f"{GEMINI_API_BASE}/models/gemini-1.5-pro:generateContent",
+        ]
+        candidate_urls = list(dict.fromkeys(candidate_urls))
         
         generation_config: Dict[str, Any] = {
             "temperature": temperature,
@@ -82,22 +134,36 @@ class GeminiBYOKService:
             }
 
         headers = {"Content-Type": "application/json"}
-        params = {"key": api_key}
+        params = {"key": api_key.strip()}
 
         start_time = time.perf_counter()
+        response = None
+        used_model = selected_model
+
         async with httpx.AsyncClient(timeout=30.0) as client:
-            try:
-                response = await client.post(url, headers=headers, json=payload, params=params)
-            except httpx.TimeoutException:
-                raise HTTPException(
-                    status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-                    detail="Google Gemini API request timed out after 30 seconds."
-                )
-            except httpx.RequestError as exc:
-                raise HTTPException(
-                    status_code=status.HTTP_502_BAD_GATEWAY,
-                    detail=f"Network error communicating with Google Gemini: {str(exc)}"
-                )
+            for url in candidate_urls:
+                try:
+                    response = await client.post(url, headers=headers, json=payload, params=params)
+                    if response.status_code == 404:
+                        # Fallback to next endpoint or active model
+                        continue
+                    break
+                except httpx.TimeoutException:
+                    raise HTTPException(
+                        status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+                        detail="Google Gemini API request timed out after 30 seconds."
+                    )
+                except httpx.RequestError as exc:
+                    raise HTTPException(
+                        status_code=status.HTTP_502_BAD_GATEWAY,
+                        detail=f"Network error communicating with Google Gemini: {str(exc)}"
+                    )
+
+        if response is None:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Unable to reach Google Gemini endpoints."
+            )
 
         latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
 

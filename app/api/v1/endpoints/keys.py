@@ -134,9 +134,10 @@ async def verify_key(
         res = await db.execute(stmt)
         record = res.scalar_one_or_none()
         if not record:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"No active key registered for provider '{clean_provider}' to verify."
+            return ApiKeyVerifyResponse(
+                valid=False,
+                provider=clean_provider,
+                message=f"No active key registered for provider '{clean_provider}' to verify."
             )
         from app.core.security import decrypt_api_key
         target_key = decrypt_api_key(record.encrypted_key)
