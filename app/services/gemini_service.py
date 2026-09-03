@@ -9,7 +9,7 @@ from app.core.config import settings
 logger = logging.getLogger("levorify.gemini_service")
 
 GEMINI_API_BASE = getattr(settings, "GEMINI_API_BASE", "https://generativelanguage.googleapis.com/v1beta")
-PRIMARY_MODELS = ["gemini-1.5-flash"]
+PRIMARY_MODELS = ["gemini-3.5-flash-lite", "gemini-1.5-flash"]
 
 
 class GeminiBYOKService:
@@ -23,7 +23,7 @@ class GeminiBYOKService:
     async def verify_key(api_key: str) -> Dict[str, Any]:
         """
         Pings Google Gemini API with a lightweight test probe to verify key validity.
-        Uses active model gemini-1.5-flash across v1beta and v1 endpoints.
+        Uses active model gemini-3.5-flash-lite across v1beta and v1 endpoints.
         Probes the canonical models collection (which verifies key permissions without
         generating tokens) to guarantee key validation never fails with a 404 error.
         """
@@ -55,8 +55,8 @@ class GeminiBYOKService:
                     continue
 
             # 2. Secondary probe: generateContent on active models
-            configured_model = (settings.DEFAULT_GEMINI_MODEL or "gemini-1.5-flash").replace("models/", "").strip()
-            active_models = list(dict.fromkeys([configured_model, "gemini-1.5-flash"]))
+            configured_model = (settings.DEFAULT_GEMINI_MODEL or "gemini-3.5-flash-lite").replace("models/", "").strip()
+            active_models = list(dict.fromkeys([configured_model, "gemini-3.5-flash-lite", "gemini-1.5-flash"]))
 
             for base in candidate_bases:
                 for test_model in active_models:
@@ -100,14 +100,15 @@ class GeminiBYOKService:
         Sanitizes model names and endpoints to ensure zero 404 errors.
         """
         # Clean model name to prevent 404s (e.g. models/models/... or trailing whitespace)
-        raw_model = (model or settings.DEFAULT_GEMINI_MODEL or "gemini-1.5-flash").replace("models/", "").strip()
-        selected_model = raw_model if raw_model else "gemini-1.5-flash"
+        raw_model = (model or settings.DEFAULT_GEMINI_MODEL or "gemini-3.5-flash-lite").replace("models/", "").strip()
+        selected_model = raw_model if raw_model else "gemini-3.5-flash-lite"
         
         # Build candidate URLs in case of 404 on a specific endpoint or model
         candidate_urls = [
             f"{GEMINI_API_BASE}/models/{selected_model}:generateContent",
             f"https://generativelanguage.googleapis.com/v1beta/models/{selected_model}:generateContent",
             f"https://generativelanguage.googleapis.com/v1/models/{selected_model}:generateContent",
+            f"{GEMINI_API_BASE}/models/gemini-3.5-flash-lite:generateContent",
             f"{GEMINI_API_BASE}/models/gemini-1.5-flash:generateContent",
             f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent",
         ]
