@@ -544,10 +544,10 @@
 
       <!-- Currency Switcher Toggle -->
       <div class="mt-8 inline-flex items-center gap-1.5 p-1.5 rounded-2xl bg-slateNavy-900 border border-white/10 shadow-inner-bevel">
-        <button id="toggle-curr-inr" onclick="setPricingCurrency('INR')" class="px-4 py-2 rounded-xl text-xs font-mono font-bold bg-cyan-neon text-slateNavy-950 transition-all shadow-glow-subtle">
+        <button id="toggle-curr-inr" onclick="setPricingCurrency('INR', true)" class="px-4 py-2 rounded-xl text-xs font-mono font-bold bg-cyan-neon text-slateNavy-950 transition-all shadow-glow-subtle">
           🇮🇳 INR (₹ India)
         </button>
-        <button id="toggle-curr-usd" onclick="setPricingCurrency('USD')" class="px-4 py-2 rounded-xl text-xs font-mono font-medium text-slate-400 hover:text-white transition-all">
+        <button id="toggle-curr-usd" onclick="setPricingCurrency('USD', true)" class="px-4 py-2 rounded-xl text-xs font-mono font-medium text-slate-400 hover:text-white transition-all">
           🌐 USD ($ Global)
         </button>
       </div>
@@ -556,7 +556,7 @@
     <!-- Pricing Matrix Cards (3 Tiers) -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch max-w-6xl mx-auto">
       
-      <!-- Tier 1: Starter Operator Pass (₹1,499 / $19) -->
+      <!-- Tier 1: Starter Operator Pass (₹999 / $15) -->
       <div class="glass-panel rounded-3xl p-8 flex flex-col justify-between hover:border-cyan-neon/40 transition-all">
         <div>
           <div class="flex justify-between items-center mb-6">
@@ -569,7 +569,7 @@
 
           <div class="my-8">
             <div class="flex items-baseline gap-2">
-              <span id="price-tier-1" class="text-4xl font-black text-white font-mono">₹1,499</span>
+              <span id="price-tier-1" class="text-4xl font-black text-white font-mono" data-curr-inr="₹999" data-curr-usd="$15">₹999</span>
               <span class="text-xs font-mono uppercase tracking-wider text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">ONE-TIME</span>
             </div>
             <span class="text-xs text-slate-500 font-mono mt-1 block">Lifetime access • Zero recurring monthly fees</span>
@@ -601,11 +601,11 @@
         </div>
 
         <a href="dashboard.html?plan=starter" class="mt-8 w-full py-4 px-4 rounded-xl border border-white/10 hover:border-cyan-neon/50 bg-white/5 hover:bg-cyan-neon/10 text-white hover:text-cyan-bright font-bold text-xs uppercase tracking-wider transition-all duration-200 text-center block shadow-inner-bevel">
-          <span id="btn-tier-1-text">Get Starter Pass — ₹1,499</span>
+          <span id="btn-tier-1-text" data-curr-inr="Get Starter Pass — ₹999" data-curr-usd="Get Starter Pass — $15">Get Starter Pass — ₹999</span>
         </a>
       </div>
 
-      <!-- Tier 2: Sovereign Lifetime Pro (HIGHLIGHTED BEST VALUE CARD) (₹3,999 / $49) -->
+      <!-- Tier 2: Sovereign Lifetime Pro (HIGHLIGHTED BEST VALUE CARD) (₹1,999 / $29) -->
       <div class="relative rounded-3xl p-[2px] border-beam-ring shadow-glow-combined transform lg:-translate-y-4">
         <div class="h-full rounded-[23px] bg-gradient-to-b from-slateNavy-850 via-slateNavy-900 to-slateNavy-950 p-8 flex flex-col justify-between shadow-inner-bevel">
           
@@ -628,7 +628,7 @@
 
             <div class="my-8">
               <div class="flex items-baseline gap-2">
-                <span id="price-tier-2" class="text-5xl font-black text-white font-mono tracking-tight">₹3,999</span>
+                <span id="price-tier-2" class="text-5xl font-black text-white font-mono tracking-tight" data-curr-inr="₹1,999" data-curr-usd="$29">₹1,999</span>
                 <span class="text-xs font-mono uppercase tracking-wider text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">ONE-TIME</span>
               </div>
               <span class="text-xs text-cyan-bright font-mono font-semibold mt-1 block">Full Lifetime Access • Zero Monthly Subscriptions</span>
@@ -670,7 +670,7 @@
           <!-- Master Action Button -->
           <div class="mt-8">
             <a href="dashboard.html?plan=pro" class="w-full py-4 px-6 rounded-xl font-black text-xs uppercase tracking-widest bg-gradient-to-r from-cyan-neon via-indigo-neon to-indigo-vibrant text-slateNavy-950 shadow-glow-cyan hover:shadow-[0_0_40px_rgba(0,242,254,0.7)] transition-all duration-300 transform hover:scale-[1.02] text-center block">
-              <span id="btn-tier-2-text">Claim Lifetime Pro — ₹3,999</span>
+              <span id="btn-tier-2-text" data-curr-inr="Claim Lifetime Pro — ₹1,999" data-curr-usd="Claim Lifetime Pro — $29">Claim Lifetime Pro — ₹1,999</span>
             </a>
             <p class="text-center font-mono text-[11px] text-slate-400 mt-2.5">Instant activation • One-time investment • 100% margin capture</p>
           </div>
@@ -678,23 +678,23 @@
         </div>
       </div>
 
-      <!-- Tier 3: Agency / Multi-Brand Syndicate Pass (₹9,999 / $119) -->
+      <!-- Tier 3: Ultimate Agency Suite (₹2,999 / $39) -->
       <div class="glass-panel rounded-3xl p-8 flex flex-col justify-between hover:border-indigo-neon/40 transition-all">
         <div>
           <div class="flex justify-between items-center mb-6">
-            <span class="font-mono text-xs uppercase tracking-widest text-indigo-neon font-bold">AGENCY SYNDICATE</span>
-            <span class="px-2.5 py-1 rounded-full bg-indigo-500/10 text-[11px] font-mono text-indigo-neon border border-indigo-500/20 font-bold">UP TO 5 STORES</span>
+            <span class="font-mono text-xs uppercase tracking-widest text-indigo-neon font-bold">AGENCY SUITE</span>
+            <span class="px-2.5 py-1 rounded-full bg-indigo-500/10 text-[11px] font-mono text-indigo-neon border border-indigo-500/20 font-bold">MULTI-STORE ACCESS</span>
           </div>
 
-          <h3 class="text-2xl font-black text-white">Syndicate Pass</h3>
+          <h3 class="text-2xl font-black text-white">Ultimate Agency Suite</h3>
           <p class="text-sm text-slate-400 mt-2">Tailored for agency owners, growth consultants, and multi-brand conglomerates.</p>
 
           <div class="my-8">
             <div class="flex items-baseline gap-2">
-              <span id="price-tier-3" class="text-4xl font-black text-white font-mono">₹9,999</span>
+              <span id="price-tier-3" class="text-4xl font-black text-white font-mono" data-curr-inr="₹2,999" data-curr-usd="$39">₹2,999</span>
               <span class="text-xs font-mono uppercase tracking-wider text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">ONE-TIME</span>
             </div>
-            <span class="text-xs text-slate-500 font-mono mt-1 block">Full Commercial Client Rights • Up to 5 Stores</span>
+            <span class="text-xs text-slate-500 font-mono mt-1 block">Full Commercial Multi-Store Rights • Under ₹3,000 Cap</span>
           </div>
 
           <!-- Feature Checklist -->
@@ -713,7 +713,7 @@
             </li>
             <li class="flex items-center gap-3">
               <svg class="w-4 h-4 text-cyan-neon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              <span>High-velocity priority routing & batch dispatching</span>
+              <span>High-velocity priority routing & advanced analytics</span>
             </li>
             <li class="flex items-center gap-3">
               <svg class="w-4 h-4 text-cyan-neon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
@@ -722,8 +722,8 @@
           </ul>
         </div>
 
-        <a href="dashboard.html?plan=syndicate" class="mt-8 w-full py-4 px-4 rounded-xl border border-white/10 hover:border-indigo-neon/50 bg-white/5 hover:bg-indigo-neon/10 text-white hover:text-indigo-neon font-bold text-xs uppercase tracking-wider transition-all duration-200 text-center block shadow-inner-bevel">
-          <span id="btn-tier-3-text">Access Agency Pass — ₹9,999</span>
+        <a href="dashboard.html?plan=agency" class="mt-8 w-full py-4 px-4 rounded-xl border border-white/10 hover:border-indigo-neon/50 bg-white/5 hover:bg-indigo-neon/10 text-white hover:text-indigo-neon font-bold text-xs uppercase tracking-wider transition-all duration-200 text-center block shadow-inner-bevel">
+          <span id="btn-tier-3-text" data-curr-inr="Access Agency Suite — ₹2,999" data-curr-usd="Access Agency Suite — $39">Access Agency Suite — ₹2,999</span>
         </a>
       </div>
 
@@ -782,18 +782,20 @@
   <script>
     const pricingTiers = {
       INR: {
-        tier1: { price: '₹1,499', btn: 'Get Starter Pass — ₹1,499' },
-        tier2: { price: '₹3,999', btn: 'Claim Lifetime Pro — ₹3,999' },
-        tier3: { price: '₹9,999', btn: 'Access Agency Pass — ₹9,999' }
+        symbol: '₹',
+        tier1: { price: '₹999', btn: 'Get Starter Pass — ₹999' },
+        tier2: { price: '₹1,999', btn: 'Claim Lifetime Pro — ₹1,999' },
+        tier3: { price: '₹2,999', btn: 'Access Agency Suite — ₹2,999' }
       },
       USD: {
-        tier1: { price: '$19', btn: 'Get Starter Pass — $19' },
-        tier2: { price: '$49', btn: 'Claim Lifetime Pro — $49' },
-        tier3: { price: '$119', btn: 'Access Agency Pass — $119' }
+        symbol: '$',
+        tier1: { price: '$15', btn: 'Get Starter Pass — $15' },
+        tier2: { price: '$29', btn: 'Claim Lifetime Pro — $29' },
+        tier3: { price: '$39', btn: 'Access Agency Suite — $39' }
       }
     };
 
-    function setPricingCurrency(curr) {
+    function setPricingCurrency(curr, isManual = false) {
       const btnInr = document.getElementById('toggle-curr-inr');
       const btnUsd = document.getElementById('toggle-curr-usd');
       const p1 = document.getElementById('price-tier-1');
@@ -805,38 +807,94 @@
 
       if (!btnInr || !btnUsd) return;
 
+      if (isManual) {
+        try {
+          localStorage.setItem('levorify_pricing_currency', curr);
+          sessionStorage.setItem('levorify_currency_user_clicked', 'true');
+        } catch (e) {}
+      }
+
       if (curr === 'USD') {
         btnUsd.className = 'px-4 py-2 rounded-xl text-xs font-mono font-bold bg-cyan-neon text-slateNavy-950 transition-all shadow-glow-subtle';
         btnInr.className = 'px-4 py-2 rounded-xl text-xs font-mono font-medium text-slate-400 hover:text-white transition-all';
-        if (p1 && pricingTiers.USD.tier1) p1.innerText = pricingTiers.USD.tier1.price;
-        if (p2 && pricingTiers.USD.tier2) p2.innerText = pricingTiers.USD.tier2.price;
-        if (p3 && pricingTiers.USD.tier3) p3.innerText = pricingTiers.USD.tier3.price;
-        if (b1 && pricingTiers.USD.tier1) b1.innerText = pricingTiers.USD.tier1.btn;
-        if (b2 && pricingTiers.USD.tier2) b2.innerText = pricingTiers.USD.tier2.btn;
-        if (b3 && pricingTiers.USD.tier3) b3.innerText = pricingTiers.USD.tier3.btn;
+        if (p1) p1.innerText = pricingTiers.USD.tier1.price;
+        if (p2) p2.innerText = pricingTiers.USD.tier2.price;
+        if (p3) p3.innerText = pricingTiers.USD.tier3.price;
+        if (b1) b1.innerText = pricingTiers.USD.tier1.btn;
+        if (b2) b2.innerText = pricingTiers.USD.tier2.btn;
+        if (b3) b3.innerText = pricingTiers.USD.tier3.btn;
       } else {
         btnInr.className = 'px-4 py-2 rounded-xl text-xs font-mono font-bold bg-cyan-neon text-slateNavy-950 transition-all shadow-glow-subtle';
         btnUsd.className = 'px-4 py-2 rounded-xl text-xs font-mono font-medium text-slate-400 hover:text-white transition-all';
-        if (p1 && pricingTiers.INR.tier1) p1.innerText = pricingTiers.INR.tier1.price;
-        if (p2 && pricingTiers.INR.tier2) p2.innerText = pricingTiers.INR.tier2.price;
-        if (p3 && pricingTiers.INR.tier3) p3.innerText = pricingTiers.INR.tier3.price;
-        if (b1 && pricingTiers.INR.tier1) b1.innerText = pricingTiers.INR.tier1.btn;
-        if (b2 && pricingTiers.INR.tier2) b2.innerText = pricingTiers.INR.tier2.btn;
-        if (b3 && pricingTiers.INR.tier3) b3.innerText = pricingTiers.INR.tier3.btn;
+        if (p1) p1.innerText = pricingTiers.INR.tier1.price;
+        if (p2) p2.innerText = pricingTiers.INR.tier2.price;
+        if (p3) p3.innerText = pricingTiers.INR.tier3.price;
+        if (b1) b1.innerText = pricingTiers.INR.tier1.btn;
+        if (b2) b2.innerText = pricingTiers.INR.tier2.btn;
+        if (b3) b3.innerText = pricingTiers.INR.tier3.btn;
       }
+
+      // Dynamically toggle currency symbols and values across the entire landing page
+      document.querySelectorAll('[data-curr-inr]').forEach(el => {
+        const val = curr === 'INR' ? el.getAttribute('data-curr-inr') : el.getAttribute('data-curr-usd');
+        if (val) el.innerText = val;
+      });
     }
 
-    // Auto-detect based on locale/timezone
-    try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-      if (tz && !tz.includes('Calcutta') && !tz.includes('Kolkata') && !tz.includes('Asia/Colombo') && !tz.includes('India')) {
-        setPricingCurrency('USD');
-      } else {
-        setPricingCurrency('INR');
+    // Automated Geo-Location Detection Engine
+    (function initGeoCurrency() {
+      // 1. Prioritize explicit user preference
+      try {
+        const saved = localStorage.getItem('levorify_pricing_currency');
+        if (saved === 'INR' || saved === 'USD') {
+          setPricingCurrency(saved);
+          return;
+        }
+      } catch (e) {}
+
+      // 2. High-precision locale and timezone detection
+      let isIndia = false;
+      try {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+        const userLocales = navigator.languages || [navigator.language || ''];
+        const indiaLocales = ['-in', 'hi', 'gu', 'mr', 'ta', 'te', 'kn', 'bn', 'pa', 'ml', 'ur'];
+
+        const tzMatch = tz.includes('Calcutta') || tz.includes('Kolkata') || tz.includes('India') || tz.includes('Asia/Colombo');
+        const localeMatch = userLocales.some(loc => {
+          const l = (loc || '').toLowerCase();
+          return indiaLocales.some(il => l.includes(il));
+        });
+
+        isIndia = tzMatch || localeMatch;
+      } catch (e) {
+        isIndia = true;
       }
-    } catch (e) {
-      setPricingCurrency('INR');
-    }
+
+      // Apply initial detection immediately
+      setPricingCurrency(isIndia ? 'INR' : 'USD');
+
+      // 3. Non-blocking network geo-IP verification
+      try {
+        if (!sessionStorage.getItem('levorify_currency_user_clicked')) {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 1200);
+          fetch('https://ipapi.co/json/', { signal: controller.signal })
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+              clearTimeout(timeoutId);
+              if (data && data.country_code) {
+                const geoCurr = data.country_code === 'IN' ? 'INR' : 'USD';
+                if (!sessionStorage.getItem('levorify_currency_user_clicked')) {
+                  setPricingCurrency(geoCurr);
+                }
+              }
+            })
+            .catch(() => {
+              // Silently maintain locale/timezone decision
+            });
+        }
+      } catch (err) {}
+    })();
   </script>
 </body>
 </html>
