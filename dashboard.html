@@ -199,22 +199,56 @@
               </button>
             </form>
 
-            <!-- 1-Minute Free Key Setup Callout -->
-            <div class="mt-4 pt-4 border-t border-white/10">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-bold text-white flex items-center gap-1.5">
-                  <span>🔑</span> Free API Key Guide
+            <!-- High-Contrast Visual Tutorial Card: 60-Second Setup -->
+            <div class="mt-5 pt-4 border-t border-white/10 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-cyan-bright flex items-center gap-1.5 font-mono">
+                  <span>🔑</span> 60-Second Setup: Generate Your Free Lifetime Gemini API Key
                 </span>
-                <button type="button" onclick="openApiKeyGuideModal()" class="text-[11px] font-mono text-cyan-bright hover:underline">
-                  1-Min Setup ↗
+                <button type="button" onclick="openApiKeyGuideModal()" class="text-[10px] font-mono text-cyan-bright hover:underline whitespace-nowrap">
+                  Enlarge Modal ↗
                 </button>
               </div>
-              <p class="text-[11px] text-slate-400 mb-3 leading-relaxed">
-                Google provides 100% free lifetime Gemini API access with zero credit card required.
-              </p>
-              <button type="button" onclick="openApiKeyGuideModal()" class="w-full py-2 px-3 rounded-xl bg-cyan-neon/10 hover:bg-cyan-neon/20 border border-cyan-neon/30 text-cyan-bright font-mono text-xs font-bold transition-all flex items-center justify-center gap-2">
-                <span>🔑 How to Get Free Gemini API Key</span>
-              </button>
+
+              <!-- Interactive Direct CTA Button -->
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-cyan-neon to-indigo-neon text-slateNavy-950 font-mono text-xs font-bold hover:opacity-95 transition-all shadow-glow-cyan">
+                <span>Open Google AI Studio</span>
+                <span>↗</span>
+              </a>
+
+              <!-- 4 Visual Walkthrough Step Cards -->
+              <div class="space-y-2 text-xs font-mono">
+                <div class="p-2.5 rounded-xl bg-slateNavy-900 border border-white/5 flex items-start gap-2.5">
+                  <span class="px-1.5 py-0.5 rounded bg-cyan-neon/20 text-cyan-bright font-bold text-[10px]">01</span>
+                  <p class="text-[11px] text-slate-300"><strong>Step 01:</strong> Open Google AI Studio and sign in with your standard Google account.</p>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slateNavy-900 border border-white/5 flex items-start gap-2.5">
+                  <span class="px-1.5 py-0.5 rounded bg-cyan-neon/20 text-cyan-bright font-bold text-[10px]">02</span>
+                  <p class="text-[11px] text-slate-300"><strong>Step 02:</strong> Tap the blue "Create API Key" button and select "Create key in new project".</p>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slateNavy-900 border border-white/5 flex items-start gap-2.5">
+                  <span class="px-1.5 py-0.5 rounded bg-cyan-neon/20 text-cyan-bright font-bold text-[10px]">03</span>
+                  <p class="text-[11px] text-slate-300"><strong>Step 03:</strong> Copy the generated key string (starts with <code class="text-cyan-bright">AIzaSy...</code>).</p>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slateNavy-900 border border-white/5 flex items-start gap-2.5">
+                  <span class="px-1.5 py-0.5 rounded bg-cyan-neon/20 text-cyan-bright font-bold text-[10px]">04</span>
+                  <p class="text-[11px] text-slate-300"><strong>Step 04:</strong> Paste into the vault field below and click "Arm Key Enclave" for instant AES-128 encryption.</p>
+                </div>
+              </div>
+
+              <!-- Styled Mockup Visual Callout Banner -->
+              <div class="p-2.5 rounded-xl bg-slateNavy-950 border border-cyan-neon/20 space-y-1.5">
+                <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                  <span class="text-white font-bold flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Google AI Studio Mockup
+                  </span>
+                  <span class="text-emerald-400">Free Tier</span>
+                </div>
+                <div class="flex items-center justify-between gap-2 p-2 bg-slateNavy-900 rounded-lg border border-white/5">
+                  <code class="text-[10px] font-mono text-cyan-bright">AIzaSyD829••••••••••••••••••••</code>
+                  <span class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-blue-600 text-white font-bold whitespace-nowrap">+ Create API key</span>
+                </div>
+              </div>
             </div>
           </div>
           
@@ -449,18 +483,18 @@
             </div>
           </div>
 
-          <!-- Dedicated Visual In-App Guide: Free Gemini Key Setup -->
+          <!-- Dedicated Visual In-App Guide: 60-Second Setup -->
           <div class="p-5 rounded-2xl bg-slateNavy-900 border border-cyan-neon/30 space-y-4">
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
               <div class="flex items-center gap-2.5">
                 <span class="text-lg">🔑</span>
                 <div>
-                  <h4 class="text-sm font-bold text-white">How to Get Your Free Lifetime Google Gemini API Key (1-Minute Setup)</h4>
+                  <h4 class="text-sm font-bold text-white font-mono">🔑 60-Second Setup: Generate Your Free Lifetime Gemini API Key</h4>
                   <p class="text-[11px] font-mono text-slate-400">Zero credit card • Free forever • Instant automated activation</p>
                 </div>
               </div>
-              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="px-3.5 py-1.5 rounded-xl bg-cyan-neon text-slateNavy-950 font-mono text-xs font-bold hover:opacity-90 flex items-center gap-1.5 transition-all shadow-glow-subtle whitespace-nowrap">
-                <span>Open AI Studio</span>
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-neon to-indigo-neon text-slateNavy-950 font-mono text-xs font-bold hover:opacity-90 flex items-center gap-1.5 transition-all shadow-glow-cyan whitespace-nowrap">
+                <span>Open Google AI Studio</span>
                 <span>↗</span>
               </a>
             </div>
@@ -469,53 +503,53 @@
               Google provides every Google account holder with a generous, zero-cost free tier for Gemini API usage. You do <strong class="text-white">NOT</strong> need a credit card, payment method, or cloud billing account.
             </p>
 
-            <!-- 4 Visual Steps -->
+            <!-- 4 Visual Walkthrough Step Cards -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div class="p-3 bg-slateNavy-950 rounded-xl border border-white/5 space-y-1.5">
                 <div class="flex items-center gap-2">
-                  <span class="w-5 h-5 rounded-full bg-cyan-neon/20 text-cyan-bright font-mono text-xs flex items-center justify-center font-bold">1</span>
-                  <strong class="text-white font-mono">Step 1: Open Google AI Studio</strong>
+                  <span class="px-1.5 py-0.5 rounded bg-cyan-neon/20 text-cyan-bright font-mono text-[10px] font-bold">01</span>
+                  <strong class="text-white font-mono">Step 01: Open Google AI Studio</strong>
                 </div>
                 <p class="text-slate-400 text-[11px] leading-relaxed">
-                  Open <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-cyan-bright underline font-mono">aistudio.google.com/app/apikey</a> in a new tab.
+                  Open Google AI Studio and sign in with your standard Google account.
                 </p>
                 <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-[11px] font-mono text-cyan-neon hover:underline">
-                  Launch aistudio.google.com ↗
+                  Launch aistudio.google.com/app/apikey ↗
                 </a>
               </div>
 
               <div class="p-3 bg-slateNavy-950 rounded-xl border border-white/5 space-y-1.5">
                 <div class="flex items-center gap-2">
-                  <span class="w-5 h-5 rounded-full bg-cyan-neon/20 text-cyan-bright font-mono text-xs flex items-center justify-center font-bold">2</span>
-                  <strong class="text-white font-mono">Step 2: Sign in with Google</strong>
+                  <span class="px-1.5 py-0.5 rounded bg-cyan-neon/20 text-cyan-bright font-mono text-[10px] font-bold">02</span>
+                  <strong class="text-white font-mono">Step 02: Create API Key</strong>
                 </div>
                 <p class="text-slate-400 text-[11px] leading-relaxed">
-                  Sign in using your regular standard Google/Gmail account. No setup fees, no credit card prompts, 100% free forever.
+                  Tap the blue "Create API Key" button and select "Create key in new project".
                 </p>
               </div>
 
               <div class="p-3 bg-slateNavy-950 rounded-xl border border-white/5 space-y-1.5">
                 <div class="flex items-center gap-2">
-                  <span class="w-5 h-5 rounded-full bg-cyan-neon/20 text-cyan-bright font-mono text-xs flex items-center justify-center font-bold">3</span>
-                  <strong class="text-white font-mono">Step 3: Click "Create API Key"</strong>
+                  <span class="px-1.5 py-0.5 rounded bg-cyan-neon/20 text-cyan-bright font-mono text-[10px] font-bold">03</span>
+                  <strong class="text-white font-mono">Step 03: Copy Key String</strong>
                 </div>
                 <p class="text-slate-400 text-[11px] leading-relaxed">
-                  Click the blue <span class="text-blue-400 font-bold font-mono">"Create API Key"</span> button. Choose any Google Cloud project or auto-create one.
+                  Copy the generated key string (starts with <code class="text-cyan-bright font-mono">AIzaSy...</code>).
                 </p>
               </div>
 
               <div class="p-3 bg-slateNavy-950 rounded-xl border border-white/5 space-y-1.5">
                 <div class="flex items-center gap-2">
-                  <span class="w-5 h-5 rounded-full bg-cyan-neon/20 text-cyan-bright font-mono text-xs flex items-center justify-center font-bold">4</span>
-                  <strong class="text-white font-mono">Step 4: Copy & Arm Key Enclave</strong>
+                  <span class="px-1.5 py-0.5 rounded bg-cyan-neon/20 text-cyan-bright font-mono text-[10px] font-bold">04</span>
+                  <strong class="text-white font-mono">Step 04: Paste & Arm Enclave</strong>
                 </div>
                 <p class="text-slate-400 text-[11px] leading-relaxed">
-                  Copy your key starting with <code class="text-cyan-bright font-mono">AIzaSy...</code>, paste it into the BYOK Vault, and click <strong class="text-white font-mono">"Arm Key Enclave"</strong>.
+                  Paste into the vault field below and click "Arm Key Enclave" for instant AES-128 encryption.
                 </p>
               </div>
             </div>
 
-            <!-- Visual Preview Card -->
+            <!-- Styled Mockup Visual Callout Banner -->
             <div class="p-4 rounded-xl bg-slateNavy-950 border border-white/10 space-y-3">
               <div class="flex items-center justify-between text-[11px] font-mono text-slate-400 border-b border-white/10 pb-2">
                 <span class="flex items-center gap-1.5 text-white font-bold">
@@ -530,7 +564,7 @@
                   <div class="text-[11px] font-mono text-slate-400">API Key Table / Active Projects:</div>
                   <div class="flex items-center gap-2 flex-wrap">
                     <code class="text-xs font-mono text-cyan-bright bg-black/60 px-2.5 py-1 rounded border border-cyan-500/30">AIzaSyC490••••••••••••••••••••••••</code>
-                    <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-neon/20 text-cyan-bright font-bold">👈 Step 4: Click Copy Icon Here</span>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-neon/20 text-cyan-bright font-bold">👈 Step 03: Click Copy Icon Here</span>
                   </div>
                 </div>
                 <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-mono text-xs font-bold flex items-center gap-2 shadow transition-colors whitespace-nowrap">
@@ -692,7 +726,7 @@
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-2xl bg-cyan-neon/10 border border-cyan-neon/30 flex items-center justify-center text-cyan-neon text-lg font-black">🔑</div>
           <div>
-            <h3 class="text-base font-bold text-white">How to Get Your Free Lifetime Google Gemini API Key (1-Minute Setup)</h3>
+            <h3 class="text-base font-bold text-white font-mono">🔑 60-Second Setup: Generate Your Free Lifetime Gemini API Key</h3>
             <p class="text-[11px] font-mono text-slate-400">Zero credit card required • Instant automated issuance • 100% Free Forever</p>
           </div>
         </div>
@@ -708,20 +742,20 @@
               Google provides every Google account with generous free-tier API quotas. Follow these 4 simple steps to connect your sovereign node.
             </p>
           </div>
-          <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-neon to-indigo-neon text-slateNavy-950 font-bold font-mono text-xs hover:opacity-90 transition-all shadow-glow-subtle whitespace-nowrap">
+          <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-neon to-indigo-neon text-slateNavy-950 font-bold font-mono text-xs hover:opacity-90 transition-all shadow-glow-cyan whitespace-nowrap">
             Open Google AI Studio ↗
           </a>
         </div>
 
-        <!-- 4 Exact Visual Steps -->
+        <!-- 4 Visual Walkthrough Step Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="p-4 rounded-xl bg-slateNavy-900 border border-white/5 space-y-2">
             <div class="flex items-center gap-2">
-              <span class="w-6 h-6 rounded-full bg-cyan-neon/20 text-cyan-bright font-mono text-xs flex items-center justify-center font-bold">1</span>
-              <h5 class="text-xs font-bold text-white font-mono uppercase">Step 1: Open Google AI Studio</h5>
+              <span class="px-1.5 py-0.5 rounded bg-cyan-neon/20 text-cyan-bright font-mono text-[10px] font-bold">01</span>
+              <h5 class="text-xs font-bold text-white font-mono uppercase">Step 01: Open Google AI Studio</h5>
             </div>
             <p class="text-xs text-slate-400 leading-relaxed">
-              Navigate to Google AI Studio at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-cyan-bright underline font-mono">aistudio.google.com/app/apikey</a>.
+              Open Google AI Studio and sign in with your standard Google account.
             </p>
             <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-xs font-mono text-cyan-neon hover:underline font-bold">
               <span>Launch aistudio.google.com/app/apikey</span>
@@ -731,31 +765,31 @@
 
           <div class="p-4 rounded-xl bg-slateNavy-900 border border-white/5 space-y-2">
             <div class="flex items-center gap-2">
-              <span class="w-6 h-6 rounded-full bg-cyan-neon/20 text-cyan-bright font-mono text-xs flex items-center justify-center font-bold">2</span>
-              <h5 class="text-xs font-bold text-white font-mono uppercase">Step 2: Sign in with your standard Google Account</h5>
+              <span class="px-1.5 py-0.5 rounded bg-cyan-neon/20 text-cyan-bright font-mono text-[10px] font-bold">02</span>
+              <h5 class="text-xs font-bold text-white font-mono uppercase">Step 02: Create API Key</h5>
             </div>
             <p class="text-xs text-slate-400 leading-relaxed">
-              Sign in with your regular personal or business Gmail account. There are zero credit card requirements and no billing configuration needed.
+              Tap the blue "Create API Key" button and select "Create key in new project".
             </p>
           </div>
 
           <div class="p-4 rounded-xl bg-slateNavy-900 border border-white/5 space-y-2">
             <div class="flex items-center gap-2">
-              <span class="w-6 h-6 rounded-full bg-cyan-neon/20 text-cyan-bright font-mono text-xs flex items-center justify-center font-bold">3</span>
-              <h5 class="text-xs font-bold text-white font-mono uppercase">Step 3: Click the blue "Create API Key" button</h5>
+              <span class="px-1.5 py-0.5 rounded bg-cyan-neon/20 text-cyan-bright font-mono text-[10px] font-bold">03</span>
+              <h5 class="text-xs font-bold text-white font-mono uppercase">Step 03: Copy Key String</h5>
             </div>
             <p class="text-xs text-slate-400 leading-relaxed">
-              At the top of the Google AI Studio console, click the prominent blue <span class="text-blue-400 font-bold font-mono">"Create API Key"</span> button. Select any existing project or let Google create one automatically in 1 click.
+              Copy the generated key string (starts with <code class="text-cyan-bright font-mono">AIzaSy...</code>).
             </p>
           </div>
 
           <div class="p-4 rounded-xl bg-slateNavy-900 border border-white/5 space-y-2">
             <div class="flex items-center gap-2">
-              <span class="w-6 h-6 rounded-full bg-cyan-neon/20 text-cyan-bright font-mono text-xs flex items-center justify-center font-bold">4</span>
-              <h5 class="text-xs font-bold text-white font-mono uppercase">Step 4: Copy Key & Arm Enclave</h5>
+              <span class="px-1.5 py-0.5 rounded bg-cyan-neon/20 text-cyan-bright font-mono text-[10px] font-bold">04</span>
+              <h5 class="text-xs font-bold text-white font-mono uppercase">Step 04: Paste & Arm Enclave</h5>
             </div>
             <p class="text-xs text-slate-400 leading-relaxed">
-              Copy the generated key starting with <code class="text-cyan-bright font-mono">AIzaSy...</code>, paste it into the Levorify BYOK Vault input, and click <strong class="text-white font-mono">"Arm Key Enclave"</strong>.
+              Paste into the vault field below and click "Arm Key Enclave" for instant AES-128 encryption.
             </p>
           </div>
         </div>
@@ -776,7 +810,7 @@
               <div class="flex items-center gap-2 flex-wrap">
                 <code class="text-xs font-mono text-cyan-bright bg-black/60 px-3 py-1.5 rounded-lg border border-cyan-500/30">AIzaSyC201••••••••••••••••••••••••</code>
                 <span class="px-2.5 py-1 rounded-md text-[10px] font-mono bg-cyan-neon/20 text-cyan-bright font-bold border border-cyan-neon/30">
-                  👈 Step 4: Click Copy Icon Here
+                  👈 Step 03: Click Copy Icon Here
                 </span>
               </div>
             </div>

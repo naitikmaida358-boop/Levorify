@@ -25,7 +25,7 @@ def _score_model_preference(model_name: str) -> float:
 
     # Exclude non-chat generative models, agentic pipelines, or models requiring Interactions API
     excluded_patterns = [
-        "embedding", "imagen", "aqa", "realtime", "learnlm",
+        "embed", "embedding", "imagen", "aqa", "realtime", "learnlm",
         "interaction", "interactions", "thinking", "whisper", "tts",
         "deep-research", "robotics", "computer-use", "agent"
     ]

@@ -187,16 +187,18 @@ async def run_dashboard_integration_test():
         assert "BYOK Vault" in dash_text
         assert "Arm Key Enclave" in dash_text
         
-        # Verify Visual In-App Free Google Gemini API Key Guide (4 Steps & Modal)
-        assert "How to Get Your Free Lifetime Google Gemini API Key (1-Minute Setup)" in dash_text
-        assert "Step 1: Open Google AI Studio" in dash_text
-        assert "aistudio.google.com/app/apikey" in dash_text
-        assert "Step 2: Sign in with your standard Google Account" in dash_text
-        assert 'Step 3: Click the blue "Create API Key" button' in dash_text
-        assert "Step 4: Copy" in dash_text
+        # Verify Visual In-App Free Google Gemini API Key Guide (60-Second Setup & 4 Steps)
+        assert "60-Second Setup: Generate Your Free Lifetime Gemini API Key" in dash_text
+        assert "Open Google AI Studio" in dash_text
+        assert "https://aistudio.google.com/app/apikey" in dash_text
+        assert "Step 01: Open Google AI Studio" in dash_text
+        assert "Step 02:" in dash_text
+        assert "Create key in new project" in dash_text
+        assert "Step 03:" in dash_text
+        assert "Step 04:" in dash_text
         assert "api-key-guide-modal" in dash_text
         assert "openApiKeyGuideModal" in dash_text
-        print("  [*] Visual In-App Free Gemini Key Setup Guide PASS: 4 visual steps, modal, and AI Studio mockup verified.")
+        print("  [*] Visual In-App Free Gemini Key 60-Second Setup Guide PASS: Exact 4 visual steps, modal, and AI Studio mockup verified.")
 
         # Verify In-App Operator Handbook & Onboarding Tour UI
         assert "Sovereign Operator Handbook" in dash_text
