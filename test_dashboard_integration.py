@@ -48,11 +48,12 @@ async def test_dynamic_fallback_and_discovery_engine():
         ]
     }
 
+    from unittest.mock import MagicMock
     mock_client = AsyncMock()
-    mock_res = AsyncMock()
+    mock_res = MagicMock()
     mock_res.status_code = 200
     mock_res.json.return_value = mock_models_response
-    mock_client.get.return_value = mock_res
+    mock_client.get = AsyncMock(return_value=mock_res)
 
     discovered = await GeminiBYOKService.discover_available_models("AIzaSyFakeKey_DynamicTest", client=mock_client)
     assert "text-embedding-004" not in discovered
@@ -61,7 +62,7 @@ async def test_dynamic_fallback_and_discovery_engine():
     print(f"  [B] Runtime Model Discovery: PASS (discovered: {discovered}).")
 
     # 3. Test self-healing 404 fallback cascade in generate_d2c_content
-    # Primary model returns 404, secondary model returns 200
+    # Primary candidate returns 404, secondary candidate returns 200
     call_count = 0
     async def mock_post_handler(url, **kwargs):
         nonlocal call_count
@@ -82,7 +83,10 @@ async def test_dynamic_fallback_and_discovery_engine():
             }
         )
 
-    with patch("httpx.AsyncClient.post", side_effect=mock_post_handler):
+    with patch("app.services.gemini_service.GeminiBYOKService.discover_available_models", new_callable=AsyncMock) as mock_disc, \
+         patch("httpx.AsyncClient.post", side_effect=mock_post_handler):
+        mock_disc.return_value = ["gemini-2.5-flash-lite", "gemini-2.0-flash-lite", "gemini-1.5-flash"]
+
         result = await GeminiBYOKService.generate_d2c_content(
             api_key="AIzaSyTest_FallbackKey",
             system_instruction="You are a D2C strategist.",
