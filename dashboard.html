@@ -128,6 +128,22 @@
 
     <!-- Auth View (Shown if not logged in) -->
     <div id="auth-section" class="max-w-md mx-auto glass-panel p-8 rounded-3xl mt-8">
+      
+      <!-- Dynamic Plan Confirmation Banner (Triggered by ?plan= URL parameter) -->
+      <div id="plan-banner" class="hidden mb-6 p-4 rounded-2xl border border-cyan-neon/30 bg-slateNavy-900/90 text-left shadow-inner-bevel">
+        <div class="flex items-center justify-between gap-2 mb-1.5">
+          <span id="plan-badge-pill" class="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-cyan-neon text-slateNavy-950">
+            Sovereign Lifetime Pro
+          </span>
+          <span id="plan-price-tag" class="text-xs font-mono font-black text-emerald-400">
+            ₹3,999 • One-Time
+          </span>
+        </div>
+        <p id="plan-desc-tag" class="text-xs text-slate-300 leading-relaxed">
+          One-time pass selected. Create your operator credentials to bind your private merchant enclave.
+        </p>
+      </div>
+
       <div class="w-12 h-12 rounded-2xl bg-cyan-neon/10 border border-cyan-neon/30 flex items-center justify-center mb-4 text-cyan-neon text-xl font-black">
         ⚡
       </div>
@@ -881,6 +897,52 @@
 
     // Auto-bootstrap on load
     autoDetectCurrency();
+    checkUrlPlanParams();
+
+    function checkUrlPlanParams() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const plan = (urlParams.get('plan') || '').toLowerCase();
+      const banner = document.getElementById('plan-banner');
+      const badge = document.getElementById('plan-badge-pill');
+      const price = document.getElementById('plan-price-tag');
+      const desc = document.getElementById('plan-desc-tag');
+
+      if (!banner) return;
+
+      const planConfigs = {
+        'starter': {
+          title: 'Starter Operator Pass',
+          price: '₹1,499 ($19) • One-Time',
+          desc: 'Starter Pass selected: Core 5 D2C protocols, BYOK Vault, zero recurring fees. Create your account below to activate.',
+          color: 'bg-cyan-neon text-slateNavy-950'
+        },
+        'pro': {
+          title: 'Sovereign Lifetime Pro (Best Value)',
+          price: '₹3,999 ($49) • One-Time',
+          desc: 'Lifetime Pro selected: Full unmetered access to all 20 Sovereign Protocols, RTO Risk Shield, and lifetime updates.',
+          color: 'bg-gradient-to-r from-cyan-neon to-indigo-neon text-slateNavy-950 shadow-glow-cyan'
+        },
+        'syndicate': {
+          title: 'Agency Syndicate Pass',
+          price: '₹9,999 ($119) • One-Time',
+          desc: 'Agency Syndicate selected: Deploy across up to 5 D2C brands simultaneously with priority routing and white-label reports.',
+          color: 'bg-indigo-neon text-slateNavy-950'
+        }
+      };
+
+      if (plan && planConfigs[plan]) {
+        const config = planConfigs[plan];
+        badge.className = `px-2.5 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider ${config.color}`;
+        badge.innerText = config.title;
+        price.innerText = config.price;
+        desc.innerText = config.desc;
+        banner.classList.remove('hidden');
+
+        if (!authToken && !isRegisterMode) {
+          toggleAuthMode();
+        }
+      }
+    }
 
     if (authToken) {
       bootstrapSession();

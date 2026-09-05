@@ -1,5 +1,8 @@
 import asyncio
+import sys
 import uuid
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 from httpx import ASGITransport, AsyncClient, Response, Request
 from unittest.mock import patch, AsyncMock
 
@@ -142,6 +145,12 @@ async def run_dashboard_integration_test():
         assert "curr-eur" in dash_text
         assert "curr-gbp" in dash_text
 
+        # Verify Plan URL Parameter Banner in Dashboard
+        assert "plan-banner" in dash_text
+        assert "plan-badge-pill" in dash_text
+        assert "plan-price-tag" in dash_text
+        assert "checkUrlPlanParams" in dash_text
+
         expected_tools = [
             "Tool #1: Autonomous Product Research & Trend Scout",
             "Tool #2: Dynamic Price Anchoring & Bundling Matrix",
@@ -167,7 +176,36 @@ async def run_dashboard_integration_test():
 
         for expected_tool in expected_tools:
             assert expected_tool in dash_text, f"Missing tool in dashboard.html: '{expected_tool}'"
-        print(f"[4/10] Dashboard HTML serving PASS: All 20 Sovereign Protocols, Handbook & Currency Switcher rendered.")
+        print(f"[4/10] Dashboard HTML serving PASS: All 20 Sovereign Protocols, Handbook, Plan Banner & Currency Switcher rendered.")
+
+        # 1b. Verify Landing Page One-Time Purchase Pricing & Working CTAs
+        r_landing = await client.get("/landing")
+        assert r_landing.status_code == 200, f"Failed to get landing page: {r_landing.status_code}"
+        landing_text = r_landing.text
+
+        # Clean removal of old monthly SaaS recurring pricing
+        assert "$1,950" not in landing_text, "Found old $1,950 pricing in landing page"
+        assert "$4,910" not in landing_text, "Found old $4,910 pricing in landing page"
+        assert "$1,950/mo" not in landing_text
+        assert "$4,910/mo" not in landing_text
+
+        # Presence of 3-Tier One-Time Purchase model
+        assert "Starter Operator Pass" in landing_text
+        assert "₹1,499" in landing_text
+        assert "Sovereign Lifetime Pro" in landing_text
+        assert "₹3,999" in landing_text
+        assert "Syndicate Pass" in landing_text
+        assert "₹9,999" in landing_text
+        assert "ONE-TIME PAYMENT" in landing_text
+        assert "ZERO MONTHLY SUBSCRIPTIONS" in landing_text
+
+        # Working Action buttons wired to dashboard with plan parameters
+        assert 'href="dashboard.html?plan=starter"' in landing_text
+        assert 'href="dashboard.html?plan=pro"' in landing_text
+        assert 'href="dashboard.html?plan=syndicate"' in landing_text
+        assert 'href="dashboard.html"' in landing_text
+        assert "setPricingCurrency" in landing_text
+        print("[4b/10] Landing Page Pricing PASS: Clean one-time purchase structure (INR 1,499 / 3,999 / 9,999) and wired CTAs verified.")
 
         # 2. Register node
         uid = str(uuid.uuid4())[:8]

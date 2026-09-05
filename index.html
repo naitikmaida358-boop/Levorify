@@ -528,70 +528,84 @@
   </section>
 
   <!-- ========================================================================= -->
-  <!-- LUXURY PRICING & FOUNDER ALLOCATION (Highlight Card) -->
+  <!-- HIGH-CONVERTING ONE-TIME PURCHASE / LIFETIME ACCESS SECTION               -->
   <!-- ========================================================================= -->
   <section id="pricing" class="relative z-10 py-28 px-6 max-w-7xl mx-auto">
-    <div class="text-center max-w-2xl mx-auto mb-16">
-      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-vibrant/30 bg-slateNavy-900 text-[11px] font-mono tracking-widest uppercase text-indigo-neon mb-4">
-        STRICTLY CAPPED ALLOCATION
+    <div class="text-center max-w-3xl mx-auto mb-16">
+      <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-cyan-neon/30 bg-slateNavy-900/90 text-[11px] font-mono tracking-widest uppercase text-cyan-bright mb-4 shadow-glow-subtle">
+        <span>⚡</span> ONE-TIME PAYMENT • ZERO MONTHLY SUBSCRIPTIONS • LIFETIME ACCESS
       </div>
       <h2 class="text-3xl sm:text-5xl font-black tracking-tighter text-white leading-tight">
-        Sovereign Access Tiers
+        Own The Rails. Never Rent Again.
       </h2>
-      <p class="mt-4 text-base sm:text-lg text-slate-400">
-        We do not charge percentage rent on your revenue like Shopify Plus. Fixed transparent node access with infinite scaling headroom.
+      <p class="mt-4 text-base sm:text-lg text-slate-400 max-w-2xl mx-auto leading-relaxed">
+        Stop paying forever-rent to bloated SaaS apps. Pay once, link your zero-cost Google AI key, and operate 20 sovereign D2C optimization protocols with infinite scaling headroom.
       </p>
+
+      <!-- Currency Switcher Toggle -->
+      <div class="mt-8 inline-flex items-center gap-1.5 p-1.5 rounded-2xl bg-slateNavy-900 border border-white/10 shadow-inner-bevel">
+        <button id="toggle-curr-inr" onclick="setPricingCurrency('INR')" class="px-4 py-2 rounded-xl text-xs font-mono font-bold bg-cyan-neon text-slateNavy-950 transition-all shadow-glow-subtle">
+          🇮🇳 INR (₹ India)
+        </button>
+        <button id="toggle-curr-usd" onclick="setPricingCurrency('USD')" class="px-4 py-2 rounded-xl text-xs font-mono font-medium text-slate-400 hover:text-white transition-all">
+          🌐 USD ($ Global)
+        </button>
+      </div>
     </div>
 
-    <!-- Pricing Matrix Cards -->
+    <!-- Pricing Matrix Cards (3 Tiers) -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch max-w-6xl mx-auto">
       
-      <!-- Tier 1: Growth Node -->
-      <div class="glass-panel rounded-3xl p-8 flex flex-col justify-between">
+      <!-- Tier 1: Starter Operator Pass (₹1,499 / $19) -->
+      <div class="glass-panel rounded-3xl p-8 flex flex-col justify-between hover:border-cyan-neon/40 transition-all">
         <div>
           <div class="flex justify-between items-center mb-6">
-            <span class="font-mono text-xs uppercase tracking-widest text-slate-400 font-bold">SCALE STACK</span>
-            <span class="px-2.5 py-1 rounded-full bg-white/5 text-[11px] font-mono text-slate-300">Up to $5M/yr</span>
+            <span class="font-mono text-xs uppercase tracking-widest text-slate-400 font-bold">STARTER ENCLAVE</span>
+            <span class="px-2.5 py-1 rounded-full bg-cyan-neon/10 text-[11px] font-mono text-cyan-bright border border-cyan-neon/20 font-bold">5 PROTOCOLS</span>
           </div>
 
-          <h3 class="text-2xl font-black text-white">Growth Node</h3>
-          <p class="text-sm text-slate-400 mt-2">For breakthrough brands aggressively expanding ad spend across TikTok & Meta.</p>
+          <h3 class="text-2xl font-black text-white">Starter Operator Pass</h3>
+          <p class="text-sm text-slate-400 mt-2">Essential autonomous optimization tools for first-time direct-to-consumer store owners.</p>
 
           <div class="my-8">
-            <div class="flex items-baseline">
-              <span class="text-4xl font-black text-white font-mono">$1,950</span>
-              <span class="text-slate-400 text-sm ml-2 font-mono">/month</span>
+            <div class="flex items-baseline gap-2">
+              <span id="price-tier-1" class="text-4xl font-black text-white font-mono">₹1,499</span>
+              <span class="text-xs font-mono uppercase tracking-wider text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">ONE-TIME</span>
             </div>
-            <span class="text-xs text-slate-500 font-mono">Billed annually • 0% Transaction Fees</span>
+            <span class="text-xs text-slate-500 font-mono mt-1 block">Lifetime access • Zero recurring monthly fees</span>
           </div>
 
           <!-- Feature Checklist -->
           <ul class="space-y-3.5 text-sm text-slate-300">
             <li class="flex items-center gap-3">
               <svg class="w-4 h-4 text-cyan-neon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              <span>Sub-20ms edge checkout engine</span>
+              <span><strong>Core 5 D2C Protocols:</strong> Trend Scout, Bundling, Ad Copy, CRO & Product Descriptions</span>
             </li>
             <li class="flex items-center gap-3">
               <svg class="w-4 h-4 text-cyan-neon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              <span>Dual PSP intelligent auto-failover</span>
+              <span>BYOK Vault: Direct Google AI connection</span>
             </li>
             <li class="flex items-center gap-3">
               <svg class="w-4 h-4 text-cyan-neon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              <span>Full Headless Next.js storefront kit</span>
+              <span>Standard merchant telemetry presets</span>
             </li>
             <li class="flex items-center gap-3">
               <svg class="w-4 h-4 text-cyan-neon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              <span>Dedicated Slack engineering channel</span>
+              <span>Sovereign Operator Handbook access</span>
+            </li>
+            <li class="flex items-center gap-3">
+              <svg class="w-4 h-4 text-cyan-neon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+              <span>0% Revenue cuts or hidden surcharges</span>
             </li>
           </ul>
         </div>
 
-        <button class="mt-8 w-full py-3.5 px-4 rounded-xl border border-white/10 hover:border-cyan-neon/40 bg-white/5 hover:bg-white/10 text-white font-bold text-xs uppercase tracking-wider transition-all duration-200">
-          Deploy Growth Stack
-        </button>
+        <a href="dashboard.html?plan=starter" class="mt-8 w-full py-4 px-4 rounded-xl border border-white/10 hover:border-cyan-neon/50 bg-white/5 hover:bg-cyan-neon/10 text-white hover:text-cyan-bright font-bold text-xs uppercase tracking-wider transition-all duration-200 text-center block shadow-inner-bevel">
+          <span id="btn-tier-1-text">Get Starter Pass — ₹1,499</span>
+        </a>
       </div>
 
-      <!-- Tier 2: The Sovereign Founder Pass (HIGHLIGHTED LUXURY CARD) -->
+      <!-- Tier 2: Sovereign Lifetime Pro (HIGHLIGHTED BEST VALUE CARD) (₹3,999 / $49) -->
       <div class="relative rounded-3xl p-[2px] border-beam-ring shadow-glow-combined transform lg:-translate-y-4">
         <div class="h-full rounded-[23px] bg-gradient-to-b from-slateNavy-850 via-slateNavy-900 to-slateNavy-950 p-8 flex flex-col justify-between shadow-inner-bevel">
           
@@ -600,114 +614,117 @@
             <div class="flex justify-between items-center mb-6">
               <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-cyan-neon/20 to-indigo-neon/20 border border-cyan-neon/40 text-[11px] font-mono text-cyan-bright font-bold">
                 <span class="w-1.5 h-1.5 rounded-full bg-cyan-neon animate-pulse"></span>
-                FOUNDER LIFETIME PASS
+                MOST POPULAR • BEST VALUE
               </span>
               <span class="text-[11px] font-mono text-amber-300 font-bold bg-amber-400/10 px-2.5 py-1 rounded-full border border-amber-400/30">
-                ONLY 7 SLOTS LEFT
+                ALL 20 PROTOCOLS
               </span>
             </div>
 
             <h3 class="text-3xl font-black text-white tracking-tight flex items-center gap-2">
-              Sovereign Dynasty
+              Sovereign Lifetime Pro
             </h3>
-            <p class="text-sm text-slate-300 mt-2">Exclusive unlimited throughput license for top 0.1% brand owners requiring total architectural autonomy.</p>
+            <p class="text-sm text-slate-300 mt-2">The complete autonomous D2C operating system engineered for dominant brands scaling to 8 figures.</p>
 
             <div class="my-8">
-              <div class="flex items-baseline">
-                <span class="text-5xl font-black text-white font-mono tracking-tight">$4,900</span>
-                <span class="text-slate-400 text-sm ml-2 font-mono">/month</span>
+              <div class="flex items-baseline gap-2">
+                <span id="price-tier-2" class="text-5xl font-black text-white font-mono tracking-tight">₹3,999</span>
+                <span class="text-xs font-mono uppercase tracking-wider text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">ONE-TIME</span>
               </div>
-              <span class="text-xs text-cyan-bright font-mono font-semibold">Includes Lifetime Lock-In & Zero Rev-Share</span>
+              <span class="text-xs text-cyan-bright font-mono font-semibold mt-1 block">Full Lifetime Access • Zero Monthly Subscriptions</span>
             </div>
 
             <!-- Feature Checklist with Glowing Checks -->
-            <ul class="space-y-4 text-sm text-slate-200">
+            <ul class="space-y-3.5 text-sm text-slate-200">
               <li class="flex items-center gap-3">
-                <div class="w-5 h-5 rounded-full bg-cyan-neon/20 flex items-center justify-center text-cyan-neon flex-shrink-0">
-                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-                </div>
-                <span class="font-medium text-white">Uncapped Transaction & GMV Throughput</span>
+                <div class="w-5 h-5 rounded-full bg-cyan-neon/20 flex items-center justify-center text-cyan-neon flex-shrink-0 font-bold text-xs">✓</div>
+                <span class="font-bold text-white">Full Unmetered Access to ALL 20 Sovereign Protocols</span>
               </li>
               <li class="flex items-center gap-3">
-                <div class="w-5 h-5 rounded-full bg-cyan-neon/20 flex items-center justify-center text-cyan-neon flex-shrink-0">
-                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-                </div>
-                <span>48 Global Local Acquiring Entities (0.12% FX)</span>
+                <div class="w-5 h-5 rounded-full bg-cyan-neon/20 flex items-center justify-center text-cyan-neon flex-shrink-0 font-bold text-xs">✓</div>
+                <span><strong>RTO & COD Risk Shield:</strong> Pin-code fraud mitigation & WhatsApp prepay gates</span>
               </li>
               <li class="flex items-center gap-3">
-                <div class="w-5 h-5 rounded-full bg-cyan-neon/20 flex items-center justify-center text-cyan-neon flex-shrink-0">
-                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-                </div>
-                <span>Algorithmic Checkout AI & Retention Re-targeter</span>
+                <div class="w-5 h-5 rounded-full bg-cyan-neon/20 flex items-center justify-center text-cyan-neon flex-shrink-0 font-bold text-xs">✓</div>
+                <span><strong>Dynamic Price Anchoring Matrix:</strong> Engineered for +25-40% AOV lift</span>
               </li>
               <li class="flex items-center gap-3">
-                <div class="w-5 h-5 rounded-full bg-cyan-neon/20 flex items-center justify-center text-cyan-neon flex-shrink-0">
-                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-                </div>
-                <span>Custom Edge Extensions & Bespoke Webhooks</span>
+                <div class="w-5 h-5 rounded-full bg-cyan-neon/20 flex items-center justify-center text-cyan-neon flex-shrink-0 font-bold text-xs">✓</div>
+                <span><strong>Unit Economics Calculator:</strong> Enforces ₹800+ net cash profit per order</span>
               </li>
               <li class="flex items-center gap-3">
-                <div class="w-5 h-5 rounded-full bg-cyan-neon/20 flex items-center justify-center text-cyan-neon flex-shrink-0">
-                  <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-                </div>
-                <span class="font-bold text-amber-300">White-Glove 72-Hour Migration Guarantee</span>
+                <div class="w-5 h-5 rounded-full bg-cyan-neon/20 flex items-center justify-center text-cyan-neon flex-shrink-0 font-bold text-xs">✓</div>
+                <span><strong>Omni-Channel ROAS Scaler & Retention Flows:</strong> WhatsApp post-purchase automation</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <div class="w-5 h-5 rounded-full bg-cyan-neon/20 flex items-center justify-center text-cyan-neon flex-shrink-0 font-bold text-xs">✓</div>
+                <span><strong>Self-Healing Fallback Engine:</strong> Zero 404 errors across Google Gemini APIs</span>
+              </li>
+              <li class="flex items-center gap-3">
+                <div class="w-5 h-5 rounded-full bg-cyan-neon/20 flex items-center justify-center text-cyan-neon flex-shrink-0 font-bold text-xs">✓</div>
+                <span class="font-bold text-amber-300">Lifetime Protocol Updates & Future Engine Additions</span>
               </li>
             </ul>
           </div>
 
           <!-- Master Action Button -->
           <div class="mt-8">
-            <button class="w-full py-4 px-6 rounded-xl font-black text-xs uppercase tracking-widest bg-gradient-to-r from-cyan-neon via-indigo-neon to-indigo-vibrant text-slateNavy-950 shadow-glow-cyan hover:shadow-[0_0_40px_rgba(0,242,254,0.7)] transition-all duration-300 transform hover:scale-[1.02]">
-              Secure Sovereign Lifetime Allocation
-            </button>
-            <p class="text-center font-mono text-[11px] text-slate-500 mt-2.5">Non-dilutive • Capped to 25 enterprise partners</p>
+            <a href="dashboard.html?plan=pro" class="w-full py-4 px-6 rounded-xl font-black text-xs uppercase tracking-widest bg-gradient-to-r from-cyan-neon via-indigo-neon to-indigo-vibrant text-slateNavy-950 shadow-glow-cyan hover:shadow-[0_0_40px_rgba(0,242,254,0.7)] transition-all duration-300 transform hover:scale-[1.02] text-center block">
+              <span id="btn-tier-2-text">Claim Lifetime Pro — ₹3,999</span>
+            </a>
+            <p class="text-center font-mono text-[11px] text-slate-400 mt-2.5">Instant activation • One-time investment • 100% margin capture</p>
           </div>
 
         </div>
       </div>
 
-      <!-- Tier 3: Custom Syndicate -->
-      <div class="glass-panel rounded-3xl p-8 flex flex-col justify-between">
+      <!-- Tier 3: Agency / Multi-Brand Syndicate Pass (₹9,999 / $119) -->
+      <div class="glass-panel rounded-3xl p-8 flex flex-col justify-between hover:border-indigo-neon/40 transition-all">
         <div>
           <div class="flex justify-between items-center mb-6">
-            <span class="font-mono text-xs uppercase tracking-widest text-slate-400 font-bold">CONGLOMERATE</span>
-            <span class="px-2.5 py-1 rounded-full bg-white/5 text-[11px] font-mono text-slate-300">$50M+ GMV</span>
+            <span class="font-mono text-xs uppercase tracking-widest text-indigo-neon font-bold">AGENCY SYNDICATE</span>
+            <span class="px-2.5 py-1 rounded-full bg-indigo-500/10 text-[11px] font-mono text-indigo-neon border border-indigo-500/20 font-bold">UP TO 5 STORES</span>
           </div>
 
-          <h3 class="text-2xl font-black text-white">Private Syndicate</h3>
-          <p class="text-sm text-slate-400 mt-2">Tailored dedicated private cloud deployment with custom on-premise hardware bridges.</p>
+          <h3 class="text-2xl font-black text-white">Syndicate Pass</h3>
+          <p class="text-sm text-slate-400 mt-2">Tailored for agency owners, growth consultants, and multi-brand conglomerates.</p>
 
           <div class="my-8">
-            <div class="flex items-baseline">
-              <span class="text-4xl font-black text-white font-mono">Custom</span>
+            <div class="flex items-baseline gap-2">
+              <span id="price-tier-3" class="text-4xl font-black text-white font-mono">₹9,999</span>
+              <span class="text-xs font-mono uppercase tracking-wider text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">ONE-TIME</span>
             </div>
-            <span class="text-xs text-slate-500 font-mono">Quarterly or Multi-Year Retainer</span>
+            <span class="text-xs text-slate-500 font-mono mt-1 block">Full Commercial Client Rights • Up to 5 Stores</span>
           </div>
 
           <!-- Feature Checklist -->
           <ul class="space-y-3.5 text-sm text-slate-300">
             <li class="flex items-center gap-3">
               <svg class="w-4 h-4 text-cyan-neon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              <span>Isolated single-tenant AWS/GCP enclave</span>
+              <span><strong>Multi-Store Node Deployment:</strong> Manage up to 5 D2C brands simultaneously</span>
             </li>
             <li class="flex items-center gap-3">
               <svg class="w-4 h-4 text-cyan-neon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              <span>Direct SWIFT & FedNow liquidity routing</span>
+              <span>All 20 Sovereign Protocols enabled across every store</span>
             </li>
             <li class="flex items-center gap-3">
               <svg class="w-4 h-4 text-cyan-neon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              <span>24/7 dedicated VP of Infrastructure</span>
+              <span>White-label merchant audit reports & client exportables</span>
             </li>
             <li class="flex items-center gap-3">
               <svg class="w-4 h-4 text-cyan-neon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
-              <span>Zero-downtime cutover warranty</span>
+              <span>High-velocity priority routing & batch dispatching</span>
+            </li>
+            <li class="flex items-center gap-3">
+              <svg class="w-4 h-4 text-cyan-neon flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+              <span>Dedicated VIP Telegram / WhatsApp engineering desk</span>
             </li>
           </ul>
         </div>
 
-        <button class="mt-8 w-full py-3.5 px-4 rounded-xl border border-white/10 hover:border-indigo-neon/40 bg-white/5 hover:bg-white/10 text-white font-bold text-xs uppercase tracking-wider transition-all duration-200">
-          Book Syndicate Briefing
-        </button>
+        <a href="dashboard.html?plan=syndicate" class="mt-8 w-full py-4 px-4 rounded-xl border border-white/10 hover:border-indigo-neon/50 bg-white/5 hover:bg-indigo-neon/10 text-white hover:text-indigo-neon font-bold text-xs uppercase tracking-wider transition-all duration-200 text-center block shadow-inner-bevel">
+          <span id="btn-tier-3-text">Access Agency Pass — ₹9,999</span>
+        </a>
       </div>
 
     </div>
@@ -730,11 +747,11 @@
       </p>
       
       <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-        <a href="#pricing" class="w-full sm:w-auto px-10 py-4 rounded-xl text-xs font-black uppercase tracking-wider bg-gradient-to-r from-cyan-neon to-indigo-neon text-slateNavy-950 shadow-glow-cyan hover:shadow-[0_0_35px_rgba(0,242,254,0.6)] transition-all">
-          Deploy Your Sovereign Stack
+        <a href="dashboard.html?plan=pro" class="w-full sm:w-auto px-10 py-4 rounded-xl text-xs font-black uppercase tracking-wider bg-gradient-to-r from-cyan-neon to-indigo-neon text-slateNavy-950 shadow-glow-cyan hover:shadow-[0_0_35px_rgba(0,242,254,0.6)] transition-all">
+          Deploy Your Sovereign Stack ➔
         </a>
-        <a href="#" class="w-full sm:w-auto px-8 py-4 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-300 border border-white/10 hover:bg-white/5 transition-all">
-          Request Benchmark Report
+        <a href="dashboard.html" class="w-full sm:w-auto px-8 py-4 rounded-xl text-xs font-bold uppercase tracking-wider text-slate-300 border border-white/10 hover:bg-white/5 transition-all">
+          Launch Console & Handbook
         </a>
       </div>
     </div>
@@ -762,5 +779,64 @@
     </div>
   </footer>
 
+  <script>
+    const pricingTiers = {
+      INR: {
+        tier1: { price: '₹1,499', btn: 'Get Starter Pass — ₹1,499' },
+        tier2: { price: '₹3,999', btn: 'Claim Lifetime Pro — ₹3,999' },
+        tier3: { price: '₹9,999', btn: 'Access Agency Pass — ₹9,999' }
+      },
+      USD: {
+        tier1: { price: '$19', btn: 'Get Starter Pass — $19' },
+        tier2: { price: '$49', btn: 'Claim Lifetime Pro — $49' },
+        tier3: { price: '$119', btn: 'Access Agency Pass — $119' }
+      }
+    };
+
+    function setPricingCurrency(curr) {
+      const btnInr = document.getElementById('toggle-curr-inr');
+      const btnUsd = document.getElementById('toggle-curr-usd');
+      const p1 = document.getElementById('price-tier-1');
+      const p2 = document.getElementById('price-tier-2');
+      const p3 = document.getElementById('price-tier-3');
+      const b1 = document.getElementById('btn-tier-1-text');
+      const b2 = document.getElementById('btn-tier-2-text');
+      const b3 = document.getElementById('btn-tier-3-text');
+
+      if (!btnInr || !btnUsd) return;
+
+      if (curr === 'USD') {
+        btnUsd.className = 'px-4 py-2 rounded-xl text-xs font-mono font-bold bg-cyan-neon text-slateNavy-950 transition-all shadow-glow-subtle';
+        btnInr.className = 'px-4 py-2 rounded-xl text-xs font-mono font-medium text-slate-400 hover:text-white transition-all';
+        if (p1 && pricingTiers.USD.tier1) p1.innerText = pricingTiers.USD.tier1.price;
+        if (p2 && pricingTiers.USD.tier2) p2.innerText = pricingTiers.USD.tier2.price;
+        if (p3 && pricingTiers.USD.tier3) p3.innerText = pricingTiers.USD.tier3.price;
+        if (b1 && pricingTiers.USD.tier1) b1.innerText = pricingTiers.USD.tier1.btn;
+        if (b2 && pricingTiers.USD.tier2) b2.innerText = pricingTiers.USD.tier2.btn;
+        if (b3 && pricingTiers.USD.tier3) b3.innerText = pricingTiers.USD.tier3.btn;
+      } else {
+        btnInr.className = 'px-4 py-2 rounded-xl text-xs font-mono font-bold bg-cyan-neon text-slateNavy-950 transition-all shadow-glow-subtle';
+        btnUsd.className = 'px-4 py-2 rounded-xl text-xs font-mono font-medium text-slate-400 hover:text-white transition-all';
+        if (p1 && pricingTiers.INR.tier1) p1.innerText = pricingTiers.INR.tier1.price;
+        if (p2 && pricingTiers.INR.tier2) p2.innerText = pricingTiers.INR.tier2.price;
+        if (p3 && pricingTiers.INR.tier3) p3.innerText = pricingTiers.INR.tier3.price;
+        if (b1 && pricingTiers.INR.tier1) b1.innerText = pricingTiers.INR.tier1.btn;
+        if (b2 && pricingTiers.INR.tier2) b2.innerText = pricingTiers.INR.tier2.btn;
+        if (b3 && pricingTiers.INR.tier3) b3.innerText = pricingTiers.INR.tier3.btn;
+      }
+    }
+
+    // Auto-detect based on locale/timezone
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+      if (tz && !tz.includes('Calcutta') && !tz.includes('Kolkata') && !tz.includes('Asia/Colombo') && !tz.includes('India')) {
+        setPricingCurrency('USD');
+      } else {
+        setPricingCurrency('INR');
+      }
+    } catch (e) {
+      setPricingCurrency('INR');
+    }
+  </script>
 </body>
 </html>
