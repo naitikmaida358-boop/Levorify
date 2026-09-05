@@ -194,15 +194,33 @@
                 <label class="block text-xs font-mono text-slate-400 mb-1">GEMINI API KEY</label>
                 <input type="password" id="api-key-input" placeholder="AIzaSy..." required class="w-full bg-slateNavy-900 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-cyan-neon outline-none font-mono transition-colors">
               </div>
-              <button type="submit" class="w-full py-3 rounded-xl font-bold text-xs uppercase tracking-wider bg-slateNavy-800 border border-cyan-neon/30 text-cyan-bright hover:bg-cyan-neon/10 transition-all">
-                Commit Encrypted Key
+              <button type="submit" id="arm-key-btn" class="w-full py-3 rounded-xl font-bold text-xs uppercase tracking-wider bg-gradient-to-r from-cyan-neon to-indigo-neon text-slateNavy-950 hover:opacity-90 shadow-glow-subtle transition-all">
+                Arm Key Enclave
               </button>
             </form>
+
+            <!-- 1-Minute Free Key Setup Callout -->
+            <div class="mt-4 pt-4 border-t border-white/10">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                  <span>🔑</span> Free API Key Guide
+                </span>
+                <button type="button" onclick="openApiKeyGuideModal()" class="text-[11px] font-mono text-cyan-bright hover:underline">
+                  1-Min Setup ↗
+                </button>
+              </div>
+              <p class="text-[11px] text-slate-400 mb-3 leading-relaxed">
+                Google provides 100% free lifetime Gemini API access with zero credit card required.
+              </p>
+              <button type="button" onclick="openApiKeyGuideModal()" class="w-full py-2 px-3 rounded-xl bg-cyan-neon/10 hover:bg-cyan-neon/20 border border-cyan-neon/30 text-cyan-bright font-mono text-xs font-bold transition-all flex items-center justify-center gap-2">
+                <span>🔑 How to Get Free Gemini API Key</span>
+              </button>
+            </div>
           </div>
           
           <div id="key-status" class="mt-6 p-3.5 rounded-xl bg-slateNavy-900/80 border border-white/5 text-xs font-mono text-slate-400 flex items-center justify-between">
             <span>Status: <span id="key-status-text" class="text-amber-400">No active key linked</span></span>
-            <span class="text-[10px] text-slate-500">Gemini 2.5 Flash Lite</span>
+            <span class="text-[10px] text-slate-500">Autonomous Model Discovery</span>
           </div>
         </div>
 
@@ -430,6 +448,98 @@
               </div>
             </div>
           </div>
+
+          <!-- Dedicated Visual In-App Guide: Free Gemini Key Setup -->
+          <div class="p-5 rounded-2xl bg-slateNavy-900 border border-cyan-neon/30 space-y-4">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-white/10 pb-3">
+              <div class="flex items-center gap-2.5">
+                <span class="text-lg">🔑</span>
+                <div>
+                  <h4 class="text-sm font-bold text-white">How to Get Your Free Lifetime Google Gemini API Key (1-Minute Setup)</h4>
+                  <p class="text-[11px] font-mono text-slate-400">Zero credit card • Free forever • Instant automated activation</p>
+                </div>
+              </div>
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="px-3.5 py-1.5 rounded-xl bg-cyan-neon text-slateNavy-950 font-mono text-xs font-bold hover:opacity-90 flex items-center gap-1.5 transition-all shadow-glow-subtle whitespace-nowrap">
+                <span>Open AI Studio</span>
+                <span>↗</span>
+              </a>
+            </div>
+
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Google provides every Google account holder with a generous, zero-cost free tier for Gemini API usage. You do <strong class="text-white">NOT</strong> need a credit card, payment method, or cloud billing account.
+            </p>
+
+            <!-- 4 Visual Steps -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div class="p-3 bg-slateNavy-950 rounded-xl border border-white/5 space-y-1.5">
+                <div class="flex items-center gap-2">
+                  <span class="w-5 h-5 rounded-full bg-cyan-neon/20 text-cyan-bright font-mono text-xs flex items-center justify-center font-bold">1</span>
+                  <strong class="text-white font-mono">Step 1: Open Google AI Studio</strong>
+                </div>
+                <p class="text-slate-400 text-[11px] leading-relaxed">
+                  Open <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-cyan-bright underline font-mono">aistudio.google.com/app/apikey</a> in a new tab.
+                </p>
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-[11px] font-mono text-cyan-neon hover:underline">
+                  Launch aistudio.google.com ↗
+                </a>
+              </div>
+
+              <div class="p-3 bg-slateNavy-950 rounded-xl border border-white/5 space-y-1.5">
+                <div class="flex items-center gap-2">
+                  <span class="w-5 h-5 rounded-full bg-cyan-neon/20 text-cyan-bright font-mono text-xs flex items-center justify-center font-bold">2</span>
+                  <strong class="text-white font-mono">Step 2: Sign in with Google</strong>
+                </div>
+                <p class="text-slate-400 text-[11px] leading-relaxed">
+                  Sign in using your regular standard Google/Gmail account. No setup fees, no credit card prompts, 100% free forever.
+                </p>
+              </div>
+
+              <div class="p-3 bg-slateNavy-950 rounded-xl border border-white/5 space-y-1.5">
+                <div class="flex items-center gap-2">
+                  <span class="w-5 h-5 rounded-full bg-cyan-neon/20 text-cyan-bright font-mono text-xs flex items-center justify-center font-bold">3</span>
+                  <strong class="text-white font-mono">Step 3: Click "Create API Key"</strong>
+                </div>
+                <p class="text-slate-400 text-[11px] leading-relaxed">
+                  Click the blue <span class="text-blue-400 font-bold font-mono">"Create API Key"</span> button. Choose any Google Cloud project or auto-create one.
+                </p>
+              </div>
+
+              <div class="p-3 bg-slateNavy-950 rounded-xl border border-white/5 space-y-1.5">
+                <div class="flex items-center gap-2">
+                  <span class="w-5 h-5 rounded-full bg-cyan-neon/20 text-cyan-bright font-mono text-xs flex items-center justify-center font-bold">4</span>
+                  <strong class="text-white font-mono">Step 4: Copy & Arm Key Enclave</strong>
+                </div>
+                <p class="text-slate-400 text-[11px] leading-relaxed">
+                  Copy your key starting with <code class="text-cyan-bright font-mono">AIzaSy...</code>, paste it into the BYOK Vault, and click <strong class="text-white font-mono">"Arm Key Enclave"</strong>.
+                </p>
+              </div>
+            </div>
+
+            <!-- Visual Preview Card -->
+            <div class="p-4 rounded-xl bg-slateNavy-950 border border-white/10 space-y-3">
+              <div class="flex items-center justify-between text-[11px] font-mono text-slate-400 border-b border-white/10 pb-2">
+                <span class="flex items-center gap-1.5 text-white font-bold">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  Visual Preview: Google AI Studio Interface
+                </span>
+                <span class="text-emerald-400">100% Free Lifetime Tier</span>
+              </div>
+              
+              <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 p-3 bg-slateNavy-900 rounded-xl border border-cyan-neon/20">
+                <div class="space-y-1">
+                  <div class="text-[11px] font-mono text-slate-400">API Key Table / Active Projects:</div>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <code class="text-xs font-mono text-cyan-bright bg-black/60 px-2.5 py-1 rounded border border-cyan-500/30">AIzaSyC490••••••••••••••••••••••••</code>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-neon/20 text-cyan-bright font-bold">👈 Step 4: Click Copy Icon Here</span>
+                  </div>
+                </div>
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-mono text-xs font-bold flex items-center gap-2 shadow transition-colors whitespace-nowrap">
+                  <span>+ Create API Key</span>
+                  <span>↗</span>
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- TAB 3: The ₹800+ Net Margin Rulebook -->
@@ -571,7 +681,141 @@
     </div>
   </div>
 
+  <!-- ======================================================================= -->
+  <!-- Dedicated Modal: Free Google Gemini API Key 1-Minute Setup Guide       -->
+  <!-- ======================================================================= -->
+  <div id="api-key-guide-modal" class="fixed inset-0 z-50 hidden bg-slateNavy-950/85 backdrop-blur-xl flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-3xl max-h-[90vh] rounded-3xl border border-cyan-neon/30 shadow-2xl flex flex-col overflow-hidden">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-5 border-b border-white/10 flex items-center justify-between bg-slateNavy-900/70">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-cyan-neon/10 border border-cyan-neon/30 flex items-center justify-center text-cyan-neon text-lg font-black">🔑</div>
+          <div>
+            <h3 class="text-base font-bold text-white">How to Get Your Free Lifetime Google Gemini API Key (1-Minute Setup)</h3>
+            <p class="text-[11px] font-mono text-slate-400">Zero credit card required • Instant automated issuance • 100% Free Forever</p>
+          </div>
+        </div>
+        <button onclick="closeApiKeyGuideModal()" class="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors">✕</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 overflow-y-auto custom-scroll space-y-6 text-sm text-slate-300">
+        <div class="p-4 rounded-2xl bg-cyan-neon/5 border border-cyan-neon/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <h4 class="text-xs font-bold text-cyan-bright font-mono uppercase tracking-wider mb-1">Zero-Cost Infrastructure Access</h4>
+            <p class="text-xs text-slate-300">
+              Google provides every Google account with generous free-tier API quotas. Follow these 4 simple steps to connect your sovereign node.
+            </p>
+          </div>
+          <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-neon to-indigo-neon text-slateNavy-950 font-bold font-mono text-xs hover:opacity-90 transition-all shadow-glow-subtle whitespace-nowrap">
+            Open Google AI Studio ↗
+          </a>
+        </div>
+
+        <!-- 4 Exact Visual Steps -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="p-4 rounded-xl bg-slateNavy-900 border border-white/5 space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-cyan-neon/20 text-cyan-bright font-mono text-xs flex items-center justify-center font-bold">1</span>
+              <h5 class="text-xs font-bold text-white font-mono uppercase">Step 1: Open Google AI Studio</h5>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Navigate to Google AI Studio at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-cyan-bright underline font-mono">aistudio.google.com/app/apikey</a>.
+            </p>
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-xs font-mono text-cyan-neon hover:underline font-bold">
+              <span>Launch aistudio.google.com/app/apikey</span>
+              <span>↗</span>
+            </a>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slateNavy-900 border border-white/5 space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-cyan-neon/20 text-cyan-bright font-mono text-xs flex items-center justify-center font-bold">2</span>
+              <h5 class="text-xs font-bold text-white font-mono uppercase">Step 2: Sign in with your standard Google Account</h5>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Sign in with your regular personal or business Gmail account. There are zero credit card requirements and no billing configuration needed.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slateNavy-900 border border-white/5 space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-cyan-neon/20 text-cyan-bright font-mono text-xs flex items-center justify-center font-bold">3</span>
+              <h5 class="text-xs font-bold text-white font-mono uppercase">Step 3: Click the blue "Create API Key" button</h5>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              At the top of the Google AI Studio console, click the prominent blue <span class="text-blue-400 font-bold font-mono">"Create API Key"</span> button. Select any existing project or let Google create one automatically in 1 click.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slateNavy-900 border border-white/5 space-y-2">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded-full bg-cyan-neon/20 text-cyan-bright font-mono text-xs flex items-center justify-center font-bold">4</span>
+              <h5 class="text-xs font-bold text-white font-mono uppercase">Step 4: Copy Key & Arm Enclave</h5>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Copy the generated key starting with <code class="text-cyan-bright font-mono">AIzaSy...</code>, paste it into the Levorify BYOK Vault input, and click <strong class="text-white font-mono">"Arm Key Enclave"</strong>.
+            </p>
+          </div>
+        </div>
+
+        <!-- Google AI Studio Visual Graphic Card Mockup -->
+        <div class="p-4 rounded-2xl bg-slateNavy-950 border border-cyan-neon/30 space-y-3 shadow-glow-subtle">
+          <div class="flex items-center justify-between border-b border-white/10 pb-2.5 text-xs font-mono">
+            <div class="flex items-center gap-2">
+              <div class="w-5 h-5 rounded bg-gradient-to-tr from-cyan-400 to-indigo-500 flex items-center justify-center text-[10px] font-black text-slateNavy-950">G</div>
+              <span class="text-white font-bold">Google AI Studio • API Key Console</span>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Free Tier Active</span>
+          </div>
+
+          <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 p-3.5 bg-slateNavy-900 rounded-xl border border-white/10">
+            <div class="space-y-1">
+              <div class="text-[11px] font-mono text-slate-400">Key Name: <span class="text-white font-bold">Default API Key (Free)</span></div>
+              <div class="flex items-center gap-2 flex-wrap">
+                <code class="text-xs font-mono text-cyan-bright bg-black/60 px-3 py-1.5 rounded-lg border border-cyan-500/30">AIzaSyC201••••••••••••••••••••••••</code>
+                <span class="px-2.5 py-1 rounded-md text-[10px] font-mono bg-cyan-neon/20 text-cyan-bright font-bold border border-cyan-neon/30">
+                  👈 Step 4: Click Copy Icon Here
+                </span>
+              </div>
+            </div>
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-mono text-xs font-bold flex items-center gap-1.5 shadow transition-colors whitespace-nowrap">
+              <span>+ Create API Key</span>
+              <span>↗</span>
+            </a>
+          </div>
+          <p class="text-[11px] font-mono text-slate-500 text-center">
+            Your key is encrypted client-side with AES-128 Fernet. Levorify never stores plaintext credentials.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-4 border-t border-white/10 bg-slateNavy-900/60 flex items-center justify-between text-xs font-mono text-slate-400">
+        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="text-cyan-bright hover:underline flex items-center gap-1">
+          <span>Open Google AI Studio in new tab</span>
+          <span>↗</span>
+        </a>
+        <button onclick="closeApiKeyGuideModal(); const inp = document.getElementById('api-key-input'); if(inp) inp.focus();" class="px-4 py-2 rounded-xl bg-slateNavy-800 hover:bg-slateNavy-700 text-white font-bold transition-colors">
+          Got It, Ready to Paste Key ➔
+        </button>
+      </div>
+
+    </div>
+  </div>
+
   <script>
+    function openApiKeyGuideModal() {
+      const modal = document.getElementById('api-key-guide-modal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeApiKeyGuideModal() {
+      const modal = document.getElementById('api-key-guide-modal');
+      if (modal) modal.classList.add('hidden');
+    }
     const API_BASE_URL = (window.location && window.location.origin && window.location.origin.startsWith('http'))
       ? (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
           ? window.location.origin

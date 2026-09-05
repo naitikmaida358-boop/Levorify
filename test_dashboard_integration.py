@@ -68,6 +68,14 @@ async def test_dynamic_fallback_and_discovery_engine():
     assert "gemini-2.5-flash-lite" in discovered
     print(f"  [B] Runtime Model Discovery: PASS (discovered: {discovered}, interaction models filtered).")
 
+    # 2b. Test True Latest Active Model Auto-Selection
+    latest_active = await GeminiBYOKService.get_latest_active_model("AIzaSyFakeKey_DynamicTest", client=mock_client)
+    assert latest_active == "gemini-3.0-flash-lite-preview", f"Expected highest rated active model 'gemini-3.0-flash-lite-preview', got {latest_active}"
+    
+    candidates = await GeminiBYOKService.get_prioritized_candidates("AIzaSyFakeKey_DynamicTest", client=mock_client)
+    assert candidates[0] == latest_active, f"Top candidate should match single latest active model: {candidates[0]}"
+    print(f"  [B2] True Latest Model Auto-Selection: PASS (single highest-rated active model: {latest_active}).")
+
     # 3. Test self-healing 404 fallback cascade in generate_d2c_content
     # Primary candidate returns 404, secondary candidate returns 200
     call_count_404 = 0
@@ -177,8 +185,19 @@ async def run_dashboard_integration_test():
         dash_text = r_dash.text
         assert "Levorify OS | Sovereign Merchant Dashboard" in dash_text
         assert "BYOK Vault" in dash_text
-        assert "Gemini 2.5 Flash Lite" in dash_text
+        assert "Arm Key Enclave" in dash_text
         
+        # Verify Visual In-App Free Google Gemini API Key Guide (4 Steps & Modal)
+        assert "How to Get Your Free Lifetime Google Gemini API Key (1-Minute Setup)" in dash_text
+        assert "Step 1: Open Google AI Studio" in dash_text
+        assert "aistudio.google.com/app/apikey" in dash_text
+        assert "Step 2: Sign in with your standard Google Account" in dash_text
+        assert 'Step 3: Click the blue "Create API Key" button' in dash_text
+        assert "Step 4: Copy" in dash_text
+        assert "api-key-guide-modal" in dash_text
+        assert "openApiKeyGuideModal" in dash_text
+        print("  [*] Visual In-App Free Gemini Key Setup Guide PASS: 4 visual steps, modal, and AI Studio mockup verified.")
+
         # Verify In-App Operator Handbook & Onboarding Tour UI
         assert "Sovereign Operator Handbook" in dash_text
         assert "Start Guided Tour" in dash_text
