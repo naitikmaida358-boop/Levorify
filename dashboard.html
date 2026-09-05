@@ -19,15 +19,18 @@
             cyan: { neon: '#00f2fe', bright: '#22d3ee' },
             indigo: { neon: '#4facfe', vibrant: '#6366f1' }
           },
-          boxShadow: { 'glow-cyan': '0 0 35px -10px rgba(0, 242, 254, 0.25)' }
+          boxShadow: { 
+            'glow-cyan': '0 0 35px -10px rgba(0, 242, 254, 0.25)',
+            'glow-subtle': '0 0 20px -5px rgba(0, 242, 254, 0.15)'
+          }
         }
       }
     }
   </script>
   <style>
     .glass-panel {
-      background: rgba(13, 19, 32, 0.75);
-      backdrop-filter: blur(18px);
+      background: rgba(13, 19, 32, 0.82);
+      backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.08);
       box-shadow: 0 16px 36px -12px rgba(2, 6, 23, 0.7);
     }
@@ -42,12 +45,41 @@
       background: #1e293b;
       border-radius: 3px;
     }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+    .tour-spotlight {
+      position: relative;
+      z-index: 60 !important;
+      box-shadow: 0 0 0 9999px rgba(3, 7, 18, 0.85), 0 0 30px 4px rgba(0, 242, 254, 0.6) !important;
+      transition: all 0.3s ease-in-out;
+    }
   </style>
 </head>
-<body class="bg-slateNavy-950 text-slate-100 font-sans antialiased min-h-screen">
+<body class="bg-slateNavy-950 text-slate-100 font-sans antialiased min-h-screen relative selection:bg-cyan-neon/20 selection:text-cyan-bright">
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- Interactive Tour Tooltip Overlay -->
+  <div id="tour-overlay-card" class="fixed z-70 hidden glass-panel p-5 rounded-2xl max-w-sm w-full border border-cyan-neon/40 shadow-glow-cyan text-left pointer-events-auto">
+    <div class="flex items-center justify-between mb-2">
+      <span id="tour-step-badge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-neon/10 text-cyan-bright border border-cyan-neon/30">Step 1 of 5</span>
+      <button onclick="endInteractiveTour()" class="text-xs text-slate-400 hover:text-white font-mono">✕ Close</button>
+    </div>
+    <h4 id="tour-title" class="text-sm font-bold text-white mb-1">BYOK Sovereign Enclave</h4>
+    <p id="tour-desc" class="text-xs text-slate-300 leading-relaxed mb-4">Connect your Google Gemini API key once. It is encrypted in memory using Fernet AES-128 and never stored in plaintext.</p>
+    <div class="flex items-center justify-between">
+      <button id="tour-prev-btn" onclick="prevTourStep()" class="px-3 py-1.5 rounded-lg text-xs font-mono bg-white/5 hover:bg-white/10 text-slate-300">Previous</button>
+      <div class="flex gap-2">
+        <button onclick="endInteractiveTour()" class="px-3 py-1.5 rounded-lg text-xs font-mono text-slate-400 hover:text-white">Skip</button>
+        <button id="tour-next-btn" onclick="nextTourStep()" class="px-3.5 py-1.5 rounded-lg text-xs font-mono font-bold bg-cyan-neon text-slateNavy-950 hover:bg-cyan-bright">Next ➔</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Dashboard Navigation -->
-  <header class="border-b border-white/[0.06] bg-slateNavy-950/80 backdrop-blur-xl sticky top-0 z-50">
+  <header class="border-b border-white/[0.06] bg-slateNavy-950/80 backdrop-blur-xl sticky top-0 z-40">
     <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <a href="/landing" class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-neon to-indigo-vibrant p-[1px] shadow-glow-cyan flex items-center justify-center">
@@ -61,12 +93,32 @@
           <span class="text-[10px] font-mono text-slate-500">Autonomous D2C Merchant Cloud</span>
         </div>
       </div>
-      <div id="user-session-info" class="flex items-center gap-4 text-xs font-mono text-slate-400">
-        <div class="flex items-center gap-2">
-          <div id="node-indicator" class="w-2 h-2 rounded-full bg-rose-500"></div>
-          <span id="nav-email" class="text-slate-400">Node Offline</span>
+
+      <!-- Center / Right Navigation Controls -->
+      <div class="flex items-center gap-4">
+        
+        <!-- Dynamic Geo-Currency Switcher -->
+        <div id="currency-selector" class="flex items-center gap-1 bg-slateNavy-900 border border-white/10 rounded-xl p-1 text-xs font-mono">
+          <button id="curr-inr" onclick="setCurrency('INR')" class="px-2.5 py-1 rounded-lg text-cyan-bright font-bold bg-white/10 transition-colors">₹ INR</button>
+          <button id="curr-usd" onclick="setCurrency('USD')" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition-colors">$ USD</button>
+          <button id="curr-eur" onclick="setCurrency('EUR')" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition-colors">€ EUR</button>
+          <button id="curr-gbp" onclick="setCurrency('GBP')" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition-colors">£ GBP</button>
         </div>
-        <button id="disconnect-btn" onclick="logout()" class="hidden px-3 py-1.5 rounded-lg border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 transition-colors">Disconnect</button>
+
+        <!-- Operator Handbook & Tour Trigger -->
+        <button id="handbook-nav-btn" onclick="openHandbook('quickstart')" class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-cyan-neon/10 border border-cyan-neon/30 text-cyan-bright hover:bg-cyan-neon/20 transition-all font-mono text-xs font-semibold shadow-glow-subtle">
+          <span>📖</span>
+          <span class="hidden sm:inline">Operator Handbook</span>
+        </button>
+
+        <!-- Node Connection / Identity -->
+        <div id="user-session-info" class="flex items-center gap-3 text-xs font-mono text-slate-400">
+          <div class="flex items-center gap-2 bg-slateNavy-900 border border-white/5 px-3 py-1.5 rounded-xl">
+            <div id="node-indicator" class="w-2 h-2 rounded-full bg-rose-500"></div>
+            <span id="nav-email" class="text-slate-400">Node Offline</span>
+          </div>
+          <button id="disconnect-btn" onclick="logout()" class="hidden px-3 py-1.5 rounded-xl border border-rose-500/30 text-rose-400 hover:bg-rose-500/10 transition-colors">Disconnect</button>
+        </div>
       </div>
     </div>
   </header>
@@ -110,7 +162,7 @@
       
       <!-- Top Grid: BYOK Vault Settings -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div class="glass-panel p-6 rounded-2xl lg:col-span-1 flex flex-col justify-between">
+        <div id="key-vault-card" class="glass-panel p-6 rounded-2xl lg:col-span-1 flex flex-col justify-between">
           <div>
             <div class="flex items-center justify-between mb-1">
               <h3 class="text-lg font-bold text-white">BYOK Vault</h3>
@@ -136,7 +188,7 @@
         </div>
 
         <!-- Tool Execution Console -->
-        <div class="glass-panel p-6 rounded-2xl lg:col-span-2 flex flex-col justify-between">
+        <div id="tool-console-card" class="glass-panel p-6 rounded-2xl lg:col-span-2 flex flex-col justify-between">
           <div>
             <div class="flex items-center justify-between mb-1">
               <h3 class="text-lg font-bold text-white">Autonomous Engine Dispatch</h3>
@@ -148,7 +200,7 @@
               <div>
                 <div class="flex items-center justify-between mb-1">
                   <label class="block text-xs font-mono text-slate-400">SELECT MODULE</label>
-                  <div class="flex gap-2 flex-wrap">
+                  <div id="preset-chips" class="flex gap-2 flex-wrap">
                     <button type="button" onclick="loadSamplePreset('tool_1_trend_scout')" class="text-[10px] font-mono text-cyan-bright hover:underline">#1 Scout</button>
                     <span class="text-slate-600">|</span>
                     <button type="button" onclick="loadSamplePreset('tool_2_price_bundling')" class="text-[10px] font-mono text-cyan-bright hover:underline">#2 Pricing</button>
@@ -205,7 +257,7 @@
       <!-- Execution Output & Terminal -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <!-- Live Structured Result Card -->
-        <div class="glass-panel p-6 rounded-2xl flex flex-col justify-between">
+        <div id="output-card" class="glass-panel p-6 rounded-2xl flex flex-col justify-between">
           <div>
             <div class="flex items-center justify-between mb-3">
               <h3 class="text-sm font-mono text-slate-400 uppercase tracking-widest">Structured Protocol Result</h3>
@@ -222,7 +274,7 @@
         </div>
 
         <!-- Telemetry & Raw Event Log Terminal -->
-        <div class="glass-panel p-6 rounded-2xl">
+        <div id="terminal-card" class="glass-panel p-6 rounded-2xl">
           <div class="flex items-center justify-between mb-3">
             <h3 class="text-sm font-mono text-slate-400 uppercase tracking-widest">Live Telemetry & Execution Log</h3>
             <button onclick="clearTerminal()" class="text-xs font-mono text-slate-500 hover:text-slate-300">Clear</button>
@@ -230,7 +282,7 @@
           <pre id="terminal-output" class="custom-scroll w-full h-56 bg-slateNavy-950 p-4 rounded-xl border border-white/5 font-mono text-xs text-cyan-bright overflow-y-auto leading-relaxed">System initialized. Awaiting sovereign operator dispatch...</pre>
           <div class="mt-3 flex items-center justify-between text-[11px] font-mono text-slate-500">
             <span>Secure BYOK Tunnel: Verified</span>
-            <span>Encryption: Active</span>
+            <span>Currency: <span id="telemetry-curr-badge" class="text-cyan-bright">INR (₹)</span></span>
           </div>
         </div>
       </div>
@@ -238,6 +290,267 @@
     </div>
 
   </main>
+
+  <!-- ======================================================================= -->
+  <!-- Sovereign Operator Handbook & Onboarding Tour Modal                     -->
+  <!-- ======================================================================= -->
+  <div id="handbook-modal" class="fixed inset-0 z-50 hidden bg-slateNavy-950/80 backdrop-blur-xl flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-4xl max-h-[90vh] rounded-3xl border border-cyan-neon/30 shadow-2xl flex flex-col overflow-hidden">
+      
+      <!-- Modal Header -->
+      <div class="px-6 py-5 border-b border-white/10 flex items-center justify-between bg-slateNavy-900/60">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-cyan-neon/10 border border-cyan-neon/30 flex items-center justify-center text-cyan-neon font-black">📖</div>
+          <div>
+            <h3 class="text-base font-bold text-white">Sovereign Operator Handbook</h3>
+            <p class="text-[11px] font-mono text-slate-400">Levorify Autonomous Commerce Operating System</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <button onclick="startInteractiveTour()" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-neon to-indigo-neon text-slateNavy-950 font-bold font-mono text-xs hover:opacity-90 transition-all shadow-glow-subtle">
+            ⚡ Start Guided Tour
+          </button>
+          <button onclick="closeHandbook()" class="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors">✕</button>
+        </div>
+      </div>
+
+      <!-- Modal Tabs Bar -->
+      <div class="px-6 pt-3 border-b border-white/5 bg-slateNavy-900/30 flex gap-2 overflow-x-auto custom-scroll">
+        <button onclick="switchHandbookTab('quickstart')" id="tab-btn-quickstart" class="px-4 py-2 border-b-2 border-cyan-neon text-cyan-bright font-mono text-xs font-semibold whitespace-nowrap">1. Quickstart Guide</button>
+        <button onclick="switchHandbookTab('byok')" id="tab-btn-byok" class="px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200 font-mono text-xs font-semibold whitespace-nowrap">2. BYOK Vault Enclave</button>
+        <button onclick="switchHandbookTab('economics')" id="tab-btn-economics" class="px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200 font-mono text-xs font-semibold whitespace-nowrap">3. The ₹800+ Net Margin Rulebook</button>
+        <button onclick="switchHandbookTab('protocols')" id="tab-btn-protocols" class="px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200 font-mono text-xs font-semibold whitespace-nowrap">4. 20 Protocols Atlas</button>
+      </div>
+
+      <!-- Modal Content Area -->
+      <div class="p-6 overflow-y-auto custom-scroll flex-1 space-y-6 text-sm text-slate-300">
+
+        <!-- TAB 1: Quickstart Guide -->
+        <div id="tab-content-quickstart" class="space-y-5">
+          <div class="p-4 rounded-2xl bg-cyan-neon/5 border border-cyan-neon/20">
+            <h4 class="text-sm font-bold text-white mb-1">Welcome to Sovereign D2C Operations</h4>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Levorify OS eliminates bloated agency retainers and SaaS middlemen by executing 20 specialized e-commerce protocols directly against Google Gemini with zero markup. Follow this 4-step workflow to generate immediate, bankable ROI.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="p-4 rounded-xl bg-slateNavy-900 border border-white/5">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="w-6 h-6 rounded-full bg-cyan-neon/20 text-cyan-bright font-mono text-xs flex items-center justify-center font-bold">1</span>
+                <h5 class="text-xs font-bold text-white uppercase font-mono">Connect BYOK Key</h5>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Generate a zero-cost API key from Google AI Studio. Commit it to the BYOK Vault. It is encrypted in RAM with Fernet AES-128 and never logged.
+              </p>
+            </div>
+
+            <div class="p-4 rounded-xl bg-slateNavy-900 border border-white/5">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="w-6 h-6 rounded-full bg-cyan-neon/20 text-cyan-bright font-mono text-xs flex items-center justify-center font-bold">2</span>
+                <h5 class="text-xs font-bold text-white uppercase font-mono">Select Protocol & Preset</h5>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Choose any of the 20 sovereign protocols from the dropdown or click a quick-chip (e.g. #1 Scout, #6 Margin, #8 RTO Shield).
+              </p>
+            </div>
+
+            <div class="p-4 rounded-xl bg-slateNavy-900 border border-white/5">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="w-6 h-6 rounded-full bg-cyan-neon/20 text-cyan-bright font-mono text-xs flex items-center justify-center font-bold">3</span>
+                <h5 class="text-xs font-bold text-white uppercase font-mono">Dispatch Autonomous Engine</h5>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Hit "Execute Engine". The auto-discovery fallback engine routes the telemetry payload through the optimal active Gemini variant with zero 404s.
+              </p>
+            </div>
+
+            <div class="p-4 rounded-xl bg-slateNavy-900 border border-white/5">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="w-6 h-6 rounded-full bg-cyan-neon/20 text-cyan-bright font-mono text-xs flex items-center justify-center font-bold">4</span>
+                <h5 class="text-xs font-bold text-white uppercase font-mono">Deploy Bankable Insights</h5>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">
+                Copy structured results directly into Shopify, Meta Ads Manager, or WhatsApp automations to lock in higher AOV and reduce returns.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: BYOK Vault Enclave -->
+        <div id="tab-content-byok" class="hidden space-y-5">
+          <div class="p-4 rounded-2xl bg-slateNavy-900 border border-emerald-500/20">
+            <h4 class="text-sm font-bold text-emerald-400 mb-1">Zero-Trust Cryptographic BYOK Enclave</h4>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Levorify implements an uncompromising BYOK (Bring Your Own Key) architecture. We do NOT act as a metered middleman selling marked-up tokens. Your prompts travel directly between your node and Google's Generative AI infrastructure.
+            </p>
+          </div>
+
+          <div class="space-y-3 font-mono text-xs">
+            <div class="p-3 bg-slateNavy-950 rounded-xl border border-white/5 flex items-start gap-3">
+              <span class="text-cyan-bright font-bold">🔒</span>
+              <div>
+                <strong class="text-white">AES-128 Fernet Encryption:</strong>
+                <p class="text-slate-400 mt-0.5">Your Google API key is encrypted using symmetric 32-byte Fernet encryption before resting in storage. Even database administrators cannot view your raw key.</p>
+              </div>
+            </div>
+
+            <div class="p-3 bg-slateNavy-950 rounded-xl border border-white/5 flex items-start gap-3">
+              <span class="text-cyan-bright font-bold">🛡</span>
+              <div>
+                <strong class="text-white">Zero Plaintext Key Leakage:</strong>
+                <p class="text-slate-400 mt-0.5">API responses only return a masked hint (e.g. <code class="text-cyan-bright">AIza...9182</code>). Keys are never written to disk logs or echoed in telemetry payloads.</p>
+              </div>
+            </div>
+
+            <div class="p-3 bg-slateNavy-950 rounded-xl border border-white/5 flex items-start gap-3">
+              <span class="text-cyan-bright font-bold">⚡</span>
+              <div>
+                <strong class="text-white">Self-Healing Runtime Model Fallback:</strong>
+                <p class="text-slate-400 mt-0.5">Google frequently migrates models. Levorify auto-discovers operational models via Google's runtime API so your node never breaks with 404 errors.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: The ₹800+ Net Margin Rulebook -->
+        <div id="tab-content-economics" class="hidden space-y-5">
+          <div class="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/30">
+            <h4 class="text-sm font-bold text-indigo-300 mb-1">The Sovereign E-Commerce Profitability Manifesto</h4>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              D2C merchants fail when they confuse "high GMV" with true profit. Levorify engines enforce the <span class="text-cyan-bright font-bold">₹800+ ($10.50+) Net Contribution Margin Rule</span> on every delivered order.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slateNavy-900 border border-white/5 space-y-3 font-mono text-xs">
+            <div class="text-white font-bold border-b border-white/10 pb-2">Granular Unit Economics Waterfall:</div>
+            <div class="space-y-1.5 text-slate-400">
+              <div class="flex justify-between"><span>Gross Selling Price (AOV)</span><span class="text-emerald-400 font-bold" id="hb-rule-aov">₹2,499 (100%)</span></div>
+              <div class="flex justify-between"><span>- Landed Product COGS (Mfg + Inbound Duty)</span><span class="text-rose-400" id="hb-rule-cogs">-₹480 (19.2%)</span></div>
+              <div class="flex justify-between"><span>- 3PL Pick, Pack & Outbound Shipping</span><span class="text-rose-400" id="hb-rule-shipping">-₹180 (7.2%)</span></div>
+              <div class="flex justify-between"><span>- Payment Processing Fee (2%)</span><span class="text-rose-400" id="hb-rule-pg">-₹50 (2.0%)</span></div>
+              <div class="flex justify-between"><span>- Customer Acquisition Cost (Blended Meta/Google CAC)</span><span class="text-rose-400" id="hb-rule-cac">-₹750 (30.0%)</span></div>
+              <div class="flex justify-between"><span>- RTO & Return Reverse Logistics Reserve (15%)</span><span class="text-rose-400" id="hb-rule-rto">-₹210 (8.4%)</span></div>
+              <div class="flex justify-between border-t border-cyan-neon/30 pt-2 text-sm text-cyan-bright font-bold">
+                <span>= Net Contribution Margin per Order</span>
+                <span id="hb-rule-profit">+₹829 (33.2% Net)</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div class="p-3 bg-slateNavy-900 rounded-xl border border-white/5">
+              <strong class="text-white">Break-Even ROAS Formula:</strong>
+              <p class="font-mono text-cyan-bright mt-1">1 / (Gross Margin %)</p>
+              <p class="text-slate-400 text-[11px] mt-1">If gross margin is 75%, break-even ROAS is 1.33x. Anything above 2.0x generates massive net bank cash.</p>
+            </div>
+            <div class="p-3 bg-slateNavy-900 rounded-xl border border-white/5">
+              <strong class="text-white">COD to Prepaid Shield:</strong>
+              <p class="font-mono text-emerald-400 mt-1">Offer <span class="curr-symbol">₹</span>50 / $1 off for Prepayment</p>
+              <p class="text-slate-400 text-[11px] mt-1">Saves <span class="curr-symbol">₹</span>140+ in courier RTO charges and eliminates cancellation anxiety.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 4: 20 Protocols Atlas -->
+        <div id="tab-content-protocols" class="hidden space-y-4">
+          <p class="text-xs text-slate-400">
+            Click any protocol to instantly mount it into your active dispatch console:
+          </p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs font-mono max-h-[400px] overflow-y-auto custom-scroll pr-1">
+            <button onclick="selectAndClose('tool_1_trend_scout')" class="p-3 rounded-xl bg-slateNavy-900 hover:bg-cyan-neon/10 border border-white/5 hover:border-cyan-neon/30 text-left transition-all">
+              <div class="text-cyan-bright font-bold">Tool #1: Trend Scout</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">Product Arbitrage & Viral Search Velocity</div>
+            </button>
+            <button onclick="selectAndClose('tool_2_price_bundling')" class="p-3 rounded-xl bg-slateNavy-900 hover:bg-cyan-neon/10 border border-white/5 hover:border-cyan-neon/30 text-left transition-all">
+              <div class="text-cyan-bright font-bold">Tool #2: Bundling Matrix</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">Dynamic Price Anchoring & High AOV Tiers</div>
+            </button>
+            <button onclick="selectAndClose('tool_3_ad_copy')" class="p-3 rounded-xl bg-slateNavy-900 hover:bg-cyan-neon/10 border border-white/5 hover:border-cyan-neon/30 text-left transition-all">
+              <div class="text-cyan-bright font-bold">Tool #3: Ad Copy Generator</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">High-ROAS Meta, Search & TikTok Creative</div>
+            </button>
+            <button onclick="selectAndClose('tool_4_video_script')" class="p-3 rounded-xl bg-slateNavy-900 hover:bg-cyan-neon/10 border border-white/5 hover:border-cyan-neon/30 text-left transition-all">
+              <div class="text-cyan-bright font-bold">Tool #4: Faceless Video Script</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">Viral 30s Short-Form Blueprint & Hooks</div>
+            </button>
+            <button onclick="selectAndClose('tool_5_cro_audit')" class="p-3 rounded-xl bg-slateNavy-900 hover:bg-cyan-neon/10 border border-white/5 hover:border-cyan-neon/30 text-left transition-all">
+              <div class="text-cyan-bright font-bold">Tool #5: CRO Audit</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">D2C Funnel & Mobile Friction Diagnosis</div>
+            </button>
+            <button onclick="selectAndClose('tool_6_unit_economics')" class="p-3 rounded-xl bg-slateNavy-900 hover:bg-cyan-neon/10 border border-white/5 hover:border-cyan-neon/30 text-left transition-all">
+              <div class="text-cyan-bright font-bold">Tool #6: Unit Economics</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">Granular Net Waterfall & Break-Even ROAS</div>
+            </button>
+            <button onclick="selectAndClose('tool_7_competitor_intelligence')" class="p-3 rounded-xl bg-slateNavy-900 hover:bg-cyan-neon/10 border border-white/5 hover:border-cyan-neon/30 text-left transition-all">
+              <div class="text-cyan-bright font-bold">Tool #7: Competitor Intelligence</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">Price Defense & Asymmetric Positioning</div>
+            </button>
+            <button onclick="selectAndClose('tool_8_rto_shield')" class="p-3 rounded-xl bg-slateNavy-900 hover:bg-cyan-neon/10 border border-white/5 hover:border-cyan-neon/30 text-left transition-all">
+              <div class="text-cyan-bright font-bold">Tool #8: RTO & COD Shield</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">Fraud Mitigation & Prepay Incentive Triggers</div>
+            </button>
+            <button onclick="selectAndClose('tool_9_retention_flow')" class="p-3 rounded-xl bg-slateNavy-900 hover:bg-cyan-neon/10 border border-white/5 hover:border-cyan-neon/30 text-left transition-all">
+              <div class="text-cyan-bright font-bold">Tool #9: WhatsApp Retention</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">Post-Purchase Automated Replenishment</div>
+            </button>
+            <button onclick="selectAndClose('tool_10_roas_scaler')" class="p-3 rounded-xl bg-slateNavy-900 hover:bg-cyan-neon/10 border border-white/5 hover:border-cyan-neon/30 text-left transition-all">
+              <div class="text-cyan-bright font-bold">Tool #10: ROAS Scaler</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">Multi-Channel Attribution & Budget Optimizer</div>
+            </button>
+            <button onclick="selectAndClose('tool_11_inventory_guard')" class="p-3 rounded-xl bg-slateNavy-900 hover:bg-cyan-neon/10 border border-white/5 hover:border-cyan-neon/30 text-left transition-all">
+              <div class="text-cyan-bright font-bold">Tool #11: Inventory Guard</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">Demand Forecasting & Reorder Point (ROP)</div>
+            </button>
+            <button onclick="selectAndClose('tool_12_affiliate_outreach')" class="p-3 rounded-xl bg-slateNavy-900 hover:bg-cyan-neon/10 border border-white/5 hover:border-cyan-neon/30 text-left transition-all">
+              <div class="text-cyan-bright font-bold">Tool #12: Affiliate Outreach</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">Micro-Influencer High-Conversion Deal Pitch</div>
+            </button>
+            <button onclick="selectAndClose('tool_13_marketplace_optimizer')" class="p-3 rounded-xl bg-slateNavy-900 hover:bg-cyan-neon/10 border border-white/5 hover:border-cyan-neon/30 text-left transition-all">
+              <div class="text-cyan-bright font-bold">Tool #13: Marketplace Optimizer</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">Amazon/Flipkart Title & Keyword Domination</div>
+            </button>
+            <button onclick="selectAndClose('tool_14_dispute_automator')" class="p-3 rounded-xl bg-slateNavy-900 hover:bg-cyan-neon/10 border border-white/5 hover:border-cyan-neon/30 text-left transition-all">
+              <div class="text-cyan-bright font-bold">Tool #14: Dispute Automator</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">Chargeback Defense & Friendly Fraud Evidence</div>
+            </button>
+            <button onclick="selectAndClose('tool_15_supply_chain_router')" class="p-3 rounded-xl bg-slateNavy-900 hover:bg-cyan-neon/10 border border-white/5 hover:border-cyan-neon/30 text-left transition-all">
+              <div class="text-cyan-bright font-bold">Tool #15: Supply Chain Router</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">Zero-Markup Global Freight & Landed COGS</div>
+            </button>
+            <button onclick="selectAndClose('tool_16_email_recovery')" class="p-3 rounded-xl bg-slateNavy-900 hover:bg-cyan-neon/10 border border-white/5 hover:border-cyan-neon/30 text-left transition-all">
+              <div class="text-cyan-bright font-bold">Tool #16: Abandoned Cart Email</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">3-Part Margin-Protecting Recovery Series</div>
+            </button>
+            <button onclick="selectAndClose('tool_17_ugc_brief')" class="p-3 rounded-xl bg-slateNavy-900 hover:bg-cyan-neon/10 border border-white/5 hover:border-cyan-neon/30 text-left transition-all">
+              <div class="text-cyan-bright font-bold">Tool #17: UGC Creative Brief</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">Creator Directives, Hooks & B-Roll Framing</div>
+            </button>
+            <button onclick="selectAndClose('tool_18_social_proof')" class="p-3 rounded-xl bg-slateNavy-900 hover:bg-cyan-neon/10 border border-white/5 hover:border-cyan-neon/30 text-left transition-all">
+              <div class="text-cyan-bright font-bold">Tool #18: Social Proof Multiplier</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">Trust Architecture & Cold Conversion Lift</div>
+            </button>
+            <button onclick="selectAndClose('tool_19_flash_sale')" class="p-3 rounded-xl bg-slateNavy-900 hover:bg-cyan-neon/10 border border-white/5 hover:border-cyan-neon/30 text-left transition-all">
+              <div class="text-cyan-bright font-bold">Tool #19: Flash Sale Architect</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">72-Hour Urgency & Dead Inventory Liquidation</div>
+            </button>
+            <button onclick="selectAndClose('tool_20_exit_strategist')" class="p-3 rounded-xl bg-slateNavy-900 hover:bg-cyan-neon/10 border border-white/5 hover:border-cyan-neon/30 text-left transition-all">
+              <div class="text-cyan-bright font-bold">Tool #20: Exit Strategist</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">EBITDA Multiple Expansion & M&A Diligence</div>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="px-6 py-4 border-t border-white/10 bg-slateNavy-900/60 flex items-center justify-between text-xs font-mono text-slate-400">
+        <span>Levorify Autonomous Commerce Core</span>
+        <button onclick="closeHandbook()" class="px-4 py-2 rounded-xl bg-slateNavy-800 hover:bg-slateNavy-700 text-white font-bold transition-colors">Close Handbook</button>
+      </div>
+
+    </div>
+  </div>
 
   <script>
     const API_BASE_URL = (window.location && window.location.origin && window.location.origin.startsWith('http'))
@@ -248,37 +561,327 @@
     let authToken = localStorage.getItem('levorify_token') || '';
     let isRegisterMode = false;
     let currentUser = null;
+    let currentCurrency = localStorage.getItem('levorify_currency') || 'INR';
 
-    const samplePresets = {
-      tool_1_trend_scout: "Category: Ergonomic desk accessories & titanium EDC gadgets. Target landed COGS: under $12. Retail potential: $49-$79. Evaluate trend velocity, competitive moat, and rapid validation launch plan.",
-      tool_2_price_bundling: "Primary SKU: Lumina Hydro-Serum (Retail ₹1,499, COGS ₹280). Cross-sells: Ceramide Barrier Mist (Retail ₹799, COGS ₹140), Peptide Night Mask (Retail ₹1,899, COGS ₹320). Architect a 3-tier high-converting bundle matrix.",
-      tool_3_ad_copy: "Product: Obsidian Cold Brew Tumbler (Vacuum insulated, titanium finish, 24hr ice lock). Target: Remote tech workers and fitness professionals. Current promotion: 20% off launch bundle. Generate multi-channel high-CTR ad copy.",
-      tool_4_video_script: "Product: Anti-Blue Light Glare Shield for Dual Monitor setups. Problem: Eyestrain and sleep disruption for developers and traders. Create a 30-second faceless viral TikTok/Reels video script with visual cue breakdown.",
-      tool_5_cro_audit: "Store: Premium activewear brand. Current Metrics: 120,000 monthly visitors, 1.4% CR, $82 AOV, 68% mobile drop-off at cart stage. Product page features 4 hero images, standard Shopify buy button, and customer reviews below fold. Run full forensic CRO audit.",
-      tool_6_unit_economics: "Selling Price: ₹2,499. Manufacturing/Landed COGS: ₹480. Shipping/Fulfillment: ₹180. Return/RTO Rate: 18%. Payment Gateway fee: 2%. Meta Ad Spend: ₹45,000 generating 50 orders (CAC ₹900). Compute granular unit economics waterfall and break-even ROAS.",
-      tool_7_competitor_intelligence: "Target Brand: Artisan organic matcha powder ($38 for 100g). Primary Competitors: Competitor A ($29 with subscribe & save 15%), Competitor B ($44 luxury Japanese origin). Analyze positioning, value gaps, and recommend an asymmetric price defense strategy.",
-      tool_8_rto_shield: "Order Telemetry: PIN 110025 (New Delhi), Payment Method: COD, Cart Value: ₹3,850, SKU: Sovereign Leather Duffel, Customer History: 1 previous return, Order Time: 02:40 AM, IP Location: Outer Delhi. Assess RTO risk and recommend sovereign mitigation protocol.",
-      tool_9_retention_flow: "Brand: Clean nutritional supplements (30-day supply probiotic greens, ₹1,899). Customer: First-time purchaser. Build complete 45-day WhatsApp & SMS post-purchase retention sequence to drive replenishment and 90-day subscription.",
-      tool_10_roas_scaler: "Monthly Ad Spend: Meta Ads ₹3,50,000 (Reported ROAS 2.1x), Google Search ₹1,80,000 (Reported ROAS 4.2x), YouTube Ads ₹90,000 (Reported ROAS 1.1x). Total Store Revenue: ₹14,20,000 (Blended MER 2.29x). Provide true attribution diagnosis and scaling budget allocation.",
-      tool_11_inventory_guard: "SKU: Hydro-Serum 50ml. Current Warehouse Stock: 1,450 units. Daily Sales Velocity: 65 units/day (trending up 15% WoW). Factory Lead Time: 28 days. Shipping/Customs: 10 days. Minimum order quantity (MOQ): 2,000 units. Calculate ROP and recommend immediate reorder schedule.",
-      tool_12_affiliate_outreach: "Product: Cold Brew Titanium Tumbler ($49). Target Creators: Coffee aficionados, productivity creators, and desk-setup vloggers on Instagram & TikTok (10k-50k followers). Design a high-response outreach pitch and performance affiliate commission deal.",
-      tool_13_marketplace_optimizer: "Product: Ergonomic Memory Foam Lumbar Support Cushion for Office Chairs. Target Marketplace: Amazon & Flipkart. Current ranking: Page 4 for 'lumbar support'. Optimize title, 5 bullet points, and backend search terms.",
-      tool_14_dispute_automator: "Dispute Code: 'Product Not Received' / Friendly Fraud on Stripe. Order Amount: $185. Tracking shows carrier delivery confirmed with GPS coordinate match and front-door photo. Customer opened chargeback 2 days after delivery. Draft formal bank rebuttal package.",
-      tool_15_supply_chain_router: "Product: Stainless steel insulated water bottle with silicone grip. Target volume: 5,000 units per quarter. Factory FOB quote: $3.40/unit (Ningbo, China). Destination: Dallas, TX 3PL. Evaluate ocean freight vs air expedited, duty estimates, and landed cost optimization.",
-      tool_16_email_recovery: "Brand: Premium artisanal leather travel bags ($240-$450). Problem: 71% cart abandonment rate. Create a 3-part abandoned checkout email sequence that preserves luxury brand equity without giving away immediate margin-eroding discounts.",
-      tool_17_ugc_brief: "Product: Botanical Scalp Detox Oil for thinning hair ($34). Target Creator: Women aged 25-40 showing realistic haircare routines. Create 2 production-ready UGC briefs with scripted hooks, b-roll directions, and specific visual demonstration steps.",
-      tool_18_social_proof: "New D2C Brand: Science-backed sleep supplement launched 60 days ago with 250 orders. Low initial brand recognition and skepticism around effectiveness. Architect a comprehensive social proof multiplier strategy to elevate on-site conversion.",
-      tool_19_flash_sale: "Event: 72-Hour Monsoon / Autumn Flash Sale. Goal: Liquidate ₹8,00,000 in seasonal apparel inventory while protecting brand prestige. Current margin: 68%. Architect promotional structure, timeline, and urgent marketing copy.",
-      tool_20_exit_strategist: "Current Brand Metrics: ₹6.5 Crore annual revenue, 22% EBITDA margin, 65% revenue from own Shopify store, 35% Amazon. 3-person core team. Founder aims for strategic exit or PE growth round in 18-24 months. Provide comprehensive Sovereign Scale Roadmap and Exit Valuation blueprint.",
-      // Backwards-compatible legacy aliases
-      rto_shield: "Order Telemetry: PIN 110025 (New Delhi), Payment Method: COD, Cart Value: ₹3,850, SKU: Sovereign Leather Duffel, Customer History: 1 previous cancel, Time of Order: 02:40 AM. Assess RTO risk & suggest action.",
-      bundling: "Primary Product: Lumina Hydro-Serum (Retail ₹1,499, 78% margin). Cross-sell Candidates: Ceramide Barrier Mist (₹799), Peptide Night Recovery Cream (₹1,899). Design tiered high-AOV bundle architecture.",
-      research: "Product Category: High-end ergonomic titanium desk accessories. Sourcing target: Under $12 landed. Current market retail: $48-$75. Analyze trend velocity, viral hooks, and validation sprint.",
-      "product-description": "Product: Sovereign Obsidian Cold Brew Tumbler (Vacuum insulated, titanium-coated double wall, 24-hr ice lock, leakproof magnetic lid). Target audience: Tech executives & remote founders.",
-      "ad-copy": "Product: Lumina Hydro-Serum. Offer: Launch 20% off with code SOVEREIGN20. Target: Premium skincare buyers tired of sticky hyaluronic acid formulas. Channels: Meta, Google, TikTok."
+    // Geo-Currency Configurations & Conversions
+    const currencyConfigs = {
+      INR: { symbol: '₹', code: 'INR', label: '₹ INR', multiplier: 1.0, ruleAov: '₹2,499', ruleProfit: '+₹829' },
+      USD: { symbol: '$', code: 'USD', label: '$ USD', multiplier: 0.012, ruleAov: '$32.00', ruleProfit: '+$10.80' },
+      EUR: { symbol: '€', code: 'EUR', label: '€ EUR', multiplier: 0.011, ruleAov: '€29.50', ruleProfit: '+€9.90' },
+      GBP: { symbol: '£', code: 'GBP', label: '£ GBP', multiplier: 0.0095, ruleAov: '£25.20', ruleProfit: '+£8.50' }
     };
 
+    // Realistic Telemetry Presets (Adapts to Active Currency)
+    function getPresetsForCurrency(curr) {
+      const sym = currencyConfigs[curr].symbol;
+      const isUsd = curr === 'USD' || curr === 'EUR' || curr === 'GBP';
+
+      return {
+        tool_1_trend_scout: isUsd
+          ? `Category: Ergonomic desk accessories & titanium EDC gadgets. Target landed COGS: under ${sym}12. Retail potential: ${sym}49-${sym}79. Evaluate trend velocity, competitive moat, and rapid validation launch plan.`
+          : `Category: Ergonomic desk accessories & titanium EDC gadgets. Target landed COGS: under ${sym}950. Retail potential: ${sym}3,999-${sym}5,999. Evaluate trend velocity, competitive moat, and rapid validation launch plan.`,
+        
+        tool_2_price_bundling: isUsd
+          ? `Primary SKU: Lumina Hydro-Serum (Retail ${sym}29, COGS ${sym}4.50). Cross-sells: Ceramide Barrier Mist (Retail ${sym}16, COGS ${sym}2.80), Peptide Night Mask (Retail ${sym}38, COGS ${sym}6.20). Architect a 3-tier high-converting bundle matrix.`
+          : `Primary SKU: Lumina Hydro-Serum (Retail ${sym}1,499, COGS ${sym}280). Cross-sells: Ceramide Barrier Mist (Retail ${sym}799, COGS ${sym}140), Peptide Night Mask (Retail ${sym}1,899, COGS ${sym}320). Architect a 3-tier high-converting bundle matrix.`,
+        
+        tool_3_ad_copy: `Product: Obsidian Cold Brew Tumbler (Vacuum insulated, titanium finish, 24hr ice lock). Target: Remote tech workers and fitness professionals. Current promotion: 20% off launch bundle. Generate multi-channel high-CTR ad copy.`,
+        
+        tool_4_video_script: `Product: Anti-Blue Light Glare Shield for Dual Monitor setups. Problem: Eyestrain and sleep disruption for developers and traders. Create a 30-second faceless viral TikTok/Reels video script with visual cue breakdown.`,
+        
+        tool_5_cro_audit: isUsd
+          ? `Store: Premium activewear brand. Current Metrics: 120,000 monthly visitors, 1.4% CR, ${sym}82 AOV, 68% mobile drop-off at cart stage. Product page features 4 hero images, standard Shopify buy button, and customer reviews below fold. Run full forensic CRO audit.`
+          : `Store: Premium activewear brand. Current Metrics: 120,000 monthly visitors, 1.4% CR, ${sym}2,850 AOV, 68% mobile drop-off at cart stage. Product page features 4 hero images, standard Shopify buy button, and customer reviews below fold. Run full forensic CRO audit.`,
+        
+        tool_6_unit_economics: isUsd
+          ? `Selling Price: ${sym}32.00. Manufacturing/Landed COGS: ${sym}6.50. Shipping/Fulfillment: ${sym}3.80. Return/RTO Rate: 12%. Payment Gateway fee: 2.9%. Meta Ad Spend: ${sym}600 generating 50 orders (CAC ${sym}12.00). Compute granular unit economics waterfall and break-even ROAS.`
+          : `Selling Price: ${sym}2,499. Manufacturing/Landed COGS: ${sym}480. Shipping/Fulfillment: ${sym}180. Return/RTO Rate: 18%. Payment Gateway fee: 2%. Meta Ad Spend: ${sym}45,000 generating 50 orders (CAC ${sym}900). Compute granular unit economics waterfall and break-even ROAS.`,
+        
+        tool_7_competitor_intelligence: isUsd
+          ? `Target Brand: Artisan organic matcha powder (${sym}38 for 100g). Primary Competitors: Competitor A (${sym}29 with subscribe & save 15%), Competitor B (${sym}44 luxury origin). Analyze positioning, value gaps, and recommend an asymmetric price defense strategy.`
+          : `Target Brand: Artisan organic matcha powder (${sym}1,899 for 100g). Primary Competitors: Competitor A (${sym}1,399 with subscribe & save 15%), Competitor B (${sym}2,499 luxury origin). Analyze positioning, value gaps, and recommend an asymmetric price defense strategy.`,
+        
+        tool_8_rto_shield: isUsd
+          ? `Order Telemetry: Postal 90210 (Beverly Hills), Payment Method: Standard Checkout, Cart Value: ${sym}85.00, SKU: Sovereign Leather Duffel, Customer History: 0 previous cancels, Time: 02:40 AM. Assess RTO & fraud chargeback risk.`
+          : `Order Telemetry: PIN 110025 (New Delhi), Payment Method: COD, Cart Value: ${sym}3,850, SKU: Sovereign Leather Duffel, Customer History: 1 previous return, Order Time: 02:40 AM, IP Location: Outer Delhi. Assess RTO risk and recommend sovereign mitigation protocol.`,
+        
+        tool_9_retention_flow: `Brand: Clean nutritional supplements (30-day supply probiotic greens). Customer: First-time purchaser. Build complete 45-day WhatsApp & SMS post-purchase retention sequence to drive replenishment and subscription.`,
+        
+        tool_10_roas_scaler: isUsd
+          ? `Monthly Ad Spend: Meta Ads ${sym}4,500 (Reported ROAS 2.1x), Google Search ${sym}2,400 (Reported ROAS 4.2x), YouTube Ads ${sym}1,200 (Reported ROAS 1.1x). Total Store Revenue: ${sym}18,500 (Blended MER 2.28x). Provide true attribution diagnosis and scaling budget allocation.`
+          : `Monthly Ad Spend: Meta Ads ${sym}3,50,000 (Reported ROAS 2.1x), Google Search ${sym}1,80,000 (Reported ROAS 4.2x), YouTube Ads ${sym}90,000 (Reported ROAS 1.1x). Total Store Revenue: ${sym}14,20,000 (Blended MER 2.29x). Provide true attribution diagnosis and scaling budget allocation.`,
+        
+        tool_11_inventory_guard: `SKU: Hydro-Serum 50ml. Current Warehouse Stock: 1,450 units. Daily Sales Velocity: 65 units/day (trending up 15% WoW). Factory Lead Time: 28 days. Shipping/Customs: 10 days. Minimum order quantity (MOQ): 2,000 units. Calculate ROP and recommend immediate reorder schedule.`,
+        
+        tool_12_affiliate_outreach: `Product: Cold Brew Titanium Tumbler (${sym}49). Target Creators: Coffee aficionados, productivity creators, and desk-setup vloggers on Instagram & TikTok (10k-50k followers). Design a high-response outreach pitch and performance affiliate commission deal.`,
+        
+        tool_13_marketplace_optimizer: `Product: Ergonomic Memory Foam Lumbar Support Cushion for Office Chairs. Target Marketplace: Amazon & Flipkart. Current ranking: Page 4 for 'lumbar support'. Optimize title, 5 bullet points, and backend search terms.`,
+        
+        tool_14_dispute_automator: `Dispute Code: 'Product Not Received' / Friendly Fraud on Stripe. Order Amount: ${sym}185. Tracking shows carrier delivery confirmed with GPS coordinate match and front-door photo. Customer opened chargeback 2 days after delivery. Draft formal bank rebuttal package.`,
+        
+        tool_15_supply_chain_router: `Product: Stainless steel insulated water bottle with silicone grip. Target volume: 5,000 units per quarter. Factory FOB quote: $3.40/unit (Ningbo, China). Destination: Dallas, TX 3PL. Evaluate ocean freight vs air expedited, duty estimates, and landed cost optimization.`,
+        
+        tool_16_email_recovery: `Brand: Premium artisanal leather travel bags. Problem: 71% cart abandonment rate. Create a 3-part abandoned checkout email sequence that preserves luxury brand equity without giving away immediate margin-eroding discounts.`,
+        
+        tool_17_ugc_brief: `Product: Botanical Scalp Detox Oil for thinning hair. Target Creator: Women aged 25-40 showing realistic haircare routines. Create 2 production-ready UGC briefs with scripted hooks, b-roll directions, and specific visual demonstration steps.`,
+        
+        tool_18_social_proof: `New D2C Brand: Science-backed sleep supplement launched 60 days ago with 250 orders. Low initial brand recognition and skepticism around effectiveness. Architect a comprehensive social proof multiplier strategy to elevate on-site conversion.`,
+        
+        tool_19_flash_sale: isUsd
+          ? `Event: 72-Hour Seasonal Flash Sale. Goal: Liquidate ${sym}12,000 in seasonal apparel inventory while protecting brand prestige. Current margin: 68%. Architect promotional structure, timeline, and urgent marketing copy.`
+          : `Event: 72-Hour Monsoon / Autumn Flash Sale. Goal: Liquidate ${sym}8,00,000 in seasonal apparel inventory while protecting brand prestige. Current margin: 68%. Architect promotional structure, timeline, and urgent marketing copy.`,
+        
+        tool_20_exit_strategist: isUsd
+          ? `Current Brand Metrics: ${sym}1.2M annual revenue, 22% EBITDA margin, 65% revenue from own Shopify store, 35% Amazon. 3-person core team. Founder aims for strategic exit or PE growth round in 18-24 months. Provide comprehensive Sovereign Scale Roadmap and Exit Valuation blueprint.`
+          : `Current Brand Metrics: ${sym}6.5 Crore annual revenue, 22% EBITDA margin, 65% revenue from own Shopify store, 35% Amazon. 3-person core team. Founder aims for strategic exit or PE growth round in 18-24 months. Provide comprehensive Sovereign Scale Roadmap and Exit Valuation blueprint.`,
+        
+        // Backward compatibility legacy aliases
+        rto_shield: isUsd
+          ? `Order Telemetry: Postal 90210 (Beverly Hills), Payment Method: Standard Checkout, Cart Value: ${sym}85.00, SKU: Sovereign Leather Duffel. Assess RTO risk & suggest action.`
+          : `Order Telemetry: PIN 110025 (New Delhi), Payment Method: COD, Cart Value: ${sym}3,850, SKU: Sovereign Leather Duffel, Customer History: 1 previous cancel, Time: 02:40 AM. Assess RTO risk & suggest action.`,
+        bundling: `Primary Product: Lumina Hydro-Serum. Cross-sell Candidates: Ceramide Barrier Mist, Peptide Night Recovery Cream. Design tiered high-AOV bundle architecture.`,
+        research: `Product Category: High-end ergonomic titanium desk accessories. Sourcing target: Under ${sym}12 landed. Analyze trend velocity, viral hooks, and validation sprint.`,
+        "product-description": `Product: Sovereign Obsidian Cold Brew Tumbler (Vacuum insulated, titanium-coated double wall, 24-hr ice lock, leakproof magnetic lid). Target audience: Tech executives & remote founders.`,
+        "ad-copy": `Product: Lumina Hydro-Serum. Offer: Launch 20% off with code SOVEREIGN20. Target: Premium skincare buyers tired of sticky formulas. Channels: Meta, Google, TikTok.`
+      };
+    }
+
+    let samplePresets = getPresetsForCurrency(currentCurrency);
+
+    // Toast Notification Dispatcher
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      const borderCol = type === 'success' ? 'border-emerald-500/40 bg-slateNavy-900/95 text-emerald-300' :
+                        type === 'error' ? 'border-rose-500/40 bg-slateNavy-900/95 text-rose-300' :
+                        'border-cyan-neon/40 bg-slateNavy-900/95 text-cyan-bright';
+      toast.className = `flex items-center gap-3 px-4 py-3 rounded-2xl border backdrop-blur-xl shadow-2xl text-xs font-mono transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto ${borderCol}`;
+      const icon = type === 'success' ? '✓' : type === 'error' ? '⚠' : '⚡';
+      toast.innerHTML = `<span class="font-bold text-sm">${icon}</span><span class="flex-1 leading-relaxed">${message}</span>`;
+      container.appendChild(toast);
+      
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+      setTimeout(() => {
+        toast.classList.add('opacity-0', '-translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3600);
+    }
+
+    // Auto-detect Geo-Currency from Browser Locale / Timezone
+    function autoDetectCurrency() {
+      try {
+        const saved = localStorage.getItem('levorify_currency');
+        if (saved && currencyConfigs[saved]) {
+          setCurrency(saved, false);
+          return;
+        }
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+        if (tz.includes('Kolkata') || tz.includes('Calcutta') || tz.includes('India')) {
+          setCurrency('INR', false);
+        } else if (tz.includes('London') || tz.includes('Dublin')) {
+          setCurrency('GBP', false);
+        } else if (tz.includes('Berlin') || tz.includes('Paris') || tz.includes('Rome') || tz.includes('Madrid') || tz.includes('Europe')) {
+          setCurrency('EUR', false);
+        } else {
+          setCurrency('USD', false);
+        }
+      } catch (e) {
+        setCurrency('INR', false);
+      }
+    }
+
+    function setCurrency(curr, showNotification = true) {
+      if (!currencyConfigs[curr]) return;
+      currentCurrency = curr;
+      localStorage.setItem('levorify_currency', curr);
+
+      // Update button visual states
+      ['INR', 'USD', 'EUR', 'GBP'].forEach(c => {
+        const btn = document.getElementById(`curr-${c.toLowerCase()}`);
+        if (btn) {
+          if (c === curr) {
+            btn.className = 'px-2.5 py-1 rounded-lg text-cyan-bright font-bold bg-white/10 transition-colors shadow-glow-subtle';
+          } else {
+            btn.className = 'px-2.5 py-1 rounded-lg text-slate-400 hover:text-white transition-colors';
+          }
+        }
+      });
+
+      // Update telemetry badge
+      const badge = document.getElementById('telemetry-curr-badge');
+      if (badge) badge.innerText = `${curr} (${currencyConfigs[curr].symbol})`;
+
+      // Update Handbook rule numbers
+      const cfg = currencyConfigs[curr];
+      const aovEl = document.getElementById('hb-rule-aov');
+      const profEl = document.getElementById('hb-rule-profit');
+      if (aovEl) aovEl.innerText = `${cfg.ruleAov} (100%)`;
+      if (profEl) profEl.innerText = `${cfg.ruleProfit} (Net)`;
+      document.querySelectorAll('.curr-symbol').forEach(el => el.innerText = cfg.symbol);
+
+      // Refresh presets & update active prompt if unchanged
+      samplePresets = getPresetsForCurrency(curr);
+      const toolType = document.getElementById('tool-type').value;
+      const promptEl = document.getElementById('tool-prompt');
+      if (promptEl) {
+        promptEl.value = samplePresets[toolType] || '';
+      }
+
+      if (showNotification) {
+        showToast(`Currency active: ${currencyConfigs[curr].label}. Telemetry presets updated.`, 'info');
+      }
+    }
+
+    // Modal Handbook Tab Navigation
+    function openHandbook(initialTab = 'quickstart') {
+      const modal = document.getElementById('handbook-modal');
+      modal.classList.remove('hidden');
+      switchHandbookTab(initialTab);
+    }
+
+    function closeHandbook() {
+      const modal = document.getElementById('handbook-modal');
+      modal.classList.add('hidden');
+    }
+
+    function switchHandbookTab(tabName) {
+      ['quickstart', 'byok', 'economics', 'protocols'].forEach(t => {
+        const content = document.getElementById(`tab-content-${t}`);
+        const btn = document.getElementById(`tab-btn-${t}`);
+        if (content && btn) {
+          if (t === tabName) {
+            content.classList.remove('hidden');
+            btn.className = 'px-4 py-2 border-b-2 border-cyan-neon text-cyan-bright font-mono text-xs font-semibold whitespace-nowrap';
+          } else {
+            content.classList.add('hidden');
+            btn.className = 'px-4 py-2 border-b-2 border-transparent text-slate-400 hover:text-slate-200 font-mono text-xs font-semibold whitespace-nowrap';
+          }
+        }
+      });
+    }
+
+    function selectAndClose(toolKey) {
+      const select = document.getElementById('tool-type');
+      select.value = toolKey;
+      loadSamplePreset(toolKey);
+      closeHandbook();
+      showToast(`Mounted protocol: ${select.options[select.selectedIndex].text}`, 'success');
+      document.getElementById('tool-console-card').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Interactive Onboarding Tour Engine
+    let currentTourStep = 0;
+    const tourSteps = [
+      {
+        elementId: 'key-vault-card',
+        title: 'Step 1: Cryptographic BYOK Vault',
+        desc: 'Commit your personal Google Gemini API key once. It is encrypted client/session-side via Fernet AES-128 and never logged in plaintext.'
+      },
+      {
+        elementId: 'currency-selector',
+        title: 'Step 2: Dynamic Geo-Currency Switcher',
+        desc: 'Seamlessly toggle between INR (₹), USD ($), EUR (€), and GBP (£). All presets, margin formulas, and target waterfalls adapt dynamically.'
+      },
+      {
+        elementId: 'tool-type',
+        title: 'Step 3: 20 Sovereign Commerce Protocols',
+        desc: 'Select from 20 autonomous modules covering Trend Scouting, Dynamic Bundling, RTO Mitigation, Unit Economics, and Brand Exit Strategist.'
+      },
+      {
+        elementId: 'preset-chips',
+        title: 'Step 4: Rapid Merchant Telemetry Chips',
+        desc: 'Click any chip to inject production-tested D2C merchant telemetry into the operational prompt with a single tap.'
+      },
+      {
+        elementId: 'execute-btn',
+        title: 'Step 5: Autonomous Dispatch & Zero 404s',
+        desc: 'Hit Execute Engine to run prompts through our self-healing runtime auto-discovery engine. Results render directly in structured JSON/cards.'
+      }
+    ];
+
+    function startInteractiveTour() {
+      closeHandbook();
+      currentTourStep = 0;
+      showTourStep(currentTourStep);
+    }
+
+    function showTourStep(idx) {
+      // Clear previous spotlights
+      document.querySelectorAll('.tour-spotlight').forEach(el => el.classList.remove('tour-spotlight'));
+
+      if (idx >= tourSteps.length) {
+        endInteractiveTour();
+        showToast('Onboarding Tour Complete! You are ready to dispatch sovereign protocols.', 'success');
+        return;
+      }
+
+      const step = tourSteps[idx];
+      const targetEl = document.getElementById(step.elementId);
+      const card = document.getElementById('tour-overlay-card');
+
+      if (!targetEl || !card) return;
+
+      targetEl.classList.add('tour-spotlight');
+      targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      // Update card texts
+      document.getElementById('tour-step-badge').innerText = `Step ${idx + 1} of ${tourSteps.length}`;
+      document.getElementById('tour-title').innerText = step.title;
+      document.getElementById('tour-desc').innerText = step.desc;
+
+      const prevBtn = document.getElementById('tour-prev-btn');
+      const nextBtn = document.getElementById('tour-next-btn');
+      prevBtn.style.display = idx === 0 ? 'none' : 'inline-block';
+      nextBtn.innerText = idx === tourSteps.length - 1 ? 'Finish ➔' : 'Next ➔';
+
+      // Position tooltip near target element
+      const rect = targetEl.getBoundingClientRect();
+      const cardWidth = 340;
+      let top = rect.bottom + 12;
+      let left = rect.left + (rect.width / 2) - (cardWidth / 2);
+
+      // Viewport safety clamping
+      if (left < 16) left = 16;
+      if (left + cardWidth > window.innerWidth - 16) left = window.innerWidth - cardWidth - 16;
+      if (top + 200 > window.innerHeight) top = rect.top - 190;
+
+      card.style.top = `${Math.max(16, top)}px`;
+      card.style.left = `${left}px`;
+      card.classList.remove('hidden');
+    }
+
+    function nextTourStep() {
+      currentTourStep++;
+      showTourStep(currentTourStep);
+    }
+
+    function prevTourStep() {
+      if (currentTourStep > 0) {
+        currentTourStep--;
+        showTourStep(currentTourStep);
+      }
+    }
+
+    function endInteractiveTour() {
+      document.querySelectorAll('.tour-spotlight').forEach(el => el.classList.remove('tour-spotlight'));
+      const card = document.getElementById('tour-overlay-card');
+      if (card) card.classList.add('hidden');
+      localStorage.setItem('levorify_handbook_seen', 'true');
+    }
+
+    // Keyboard listener (Esc closes handbook and tour)
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeHandbook();
+        endInteractiveTour();
+      }
+    });
+
     // Auto-bootstrap on load
+    autoDetectCurrency();
+
     if (authToken) {
       bootstrapSession();
     }
@@ -292,7 +895,6 @@
           currentUser = await res.json();
           showDashboard();
         } else {
-          // Token expired or invalid
           logout();
         }
       } catch (err) {
@@ -320,7 +922,6 @@
         subheading.innerText = 'Authenticate to mount your encrypted BYOK session.';
         submitBtn.innerText = 'Initialize Session';
         toggleBtn.innerText = 'Need an account? Register node';
-        registerFields.classList.remove('hidden');
         registerFields.classList.add('hidden');
       }
     }
@@ -366,16 +967,23 @@
           currentUser = data.user;
           localStorage.setItem('levorify_token', authToken);
           showDashboard();
+          showToast(`Welcome back, ${email}. Sovereign node mounted.`, 'success');
+
+          // First-time onboarding prompt
+          if (!localStorage.getItem('levorify_handbook_seen')) {
+            setTimeout(() => {
+              openHandbook('quickstart');
+            }, 600);
+          }
         } else {
-          alert('Node registered successfully! Authenticating session...');
+          showToast('Node registered successfully! Authenticating session...', 'success');
           toggleAuthMode();
-          // Auto-fill and submit login
           document.getElementById('email').value = email;
           document.getElementById('password').value = password;
           document.getElementById('auth-form').dispatchEvent(new Event('submit'));
         }
       } catch (err) {
-        alert('Authentication Error: ' + err.message);
+        showToast('Authentication Error: ' + err.message, 'error');
       }
     }
 
@@ -395,7 +1003,6 @@
         navEmail.innerText = 'Node Online';
       }
 
-      // Load initial preset
       handleModuleChange();
       fetchKeyStatus();
     }
@@ -414,6 +1021,7 @@
 
       document.getElementById('nav-email').innerText = 'Node Offline';
       document.getElementById('nav-email').className = 'text-slate-400';
+      showToast('Sovereign session disconnected.', 'info');
     }
 
     async function saveApiKey(event) {
@@ -434,10 +1042,10 @@
 
         document.getElementById('key-status-text').innerHTML = `<span class="text-emerald-400 font-semibold">Active (${data.masked_key})</span>`;
         document.getElementById('api-key-input').value = '';
-        logToTerminal(`[KEY VAULT] Encrypted key committed. Hint: ${data.masked_key}`);
-        alert('API key successfully encrypted with Fernet and vaulted.');
+        logToTerminal(`[KEY VAULT] Encrypted key committed with Fernet AES-128. Hint: ${data.masked_key}`);
+        showToast('API key encrypted and vaulted into sovereign node.', 'success');
       } catch (err) {
-        alert('Error: ' + err.message);
+        showToast('Vault Error: ' + err.message, 'error');
       }
     }
 
@@ -481,12 +1089,19 @@
 
     function clearTerminal() {
       document.getElementById('terminal-output').innerText = 'Terminal reset. System ready.';
+      showToast('Live execution terminal cleared.', 'info');
     }
 
     function copyResult() {
       const content = document.getElementById('formatted-output').innerText;
+      if (!content || content.includes('Autonomous outputs will be parsed')) {
+        showToast('No output to copy yet. Run a protocol first.', 'info');
+        return;
+      }
       navigator.clipboard.writeText(content).then(() => {
-        alert('Result copied to clipboard.');
+        showToast('Protocol result copied to clipboard.', 'success');
+      }).catch(() => {
+        showToast('Failed to copy to clipboard.', 'error');
       });
     }
 
@@ -499,7 +1114,7 @@
       const formattedOutput = document.getElementById('formatted-output');
 
       if (!prompt) {
-        alert('Please enter telemetry parameters or a prompt.');
+        showToast('Please enter telemetry parameters or a prompt.', 'error');
         return;
       }
 
@@ -510,7 +1125,7 @@
       execBtn.classList.add('opacity-60');
 
       logToTerminal(`[DISPATCH] Launching module: ${toolType}`);
-      logToTerminal(`[TUNNEL] Decrypting merchant BYOK Gemini credentials in memory...`);
+      logToTerminal(`[TUNNEL] Decrypting merchant BYOK Gemini credentials in RAM enclave...`);
 
       try {
         const res = await fetch(`${API_BASE_URL}/api/v1/tools/execute`, {
@@ -530,16 +1145,18 @@
         } else {
           formattedOutput.innerText = data.result;
         }
-        document.getElementById('meta-model').innerText = `Model: ${data.model || 'gemini-2.5-flash-lite'}`;
+        document.getElementById('meta-model').innerText = `Model: ${data.model || 'gemini-auto'}`;
         document.getElementById('meta-latency').innerText = `Latency: ${data.latency_ms ? data.latency_ms.toFixed(1) : '--'} ms`;
 
-        logToTerminal(`[SUCCESS] Protocol [${data.tool_name || toolType}] executed via ${data.model || 'gemini-2.5-flash-lite'} in ${data.latency_ms ? data.latency_ms.toFixed(1) : 0}ms.`);
+        logToTerminal(`[SUCCESS] Protocol [${data.tool_name || toolType}] executed via ${data.model} in ${data.latency_ms ? data.latency_ms.toFixed(1) : 0}ms.`);
         status.innerText = 'Execution completed successfully.';
         status.className = 'text-xs font-mono text-emerald-400';
+        showToast(`Protocol executed successfully in ${data.latency_ms ? data.latency_ms.toFixed(0) : 0}ms`, 'success');
       } catch (err) {
         logToTerminal(`[ERROR] ${err.message}`);
         status.innerText = 'Execution failed.';
         status.className = 'text-xs font-mono text-rose-400';
+        showToast('Execution error: ' + err.message, 'error');
       } finally {
         spinner.classList.add('hidden');
         execBtn.disabled = false;

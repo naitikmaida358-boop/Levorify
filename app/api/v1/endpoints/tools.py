@@ -17,6 +17,38 @@ from app.services.gemini_service import gemini_service
 
 router = APIRouter()
 
+import html
+import re
+
+MAX_PROMPT_LENGTH = 15000
+
+def sanitize_telemetry_prompt(prompt: str) -> str:
+    """
+    Enterprise-grade sanitization for merchant telemetry inputs:
+    - Strips executable script tags and injection patterns
+    - Trims whitespace and prevents memory/token denial-of-service
+    """
+    if not prompt or not prompt.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Telemetry payload / prompt cannot be empty."
+        )
+    
+    clean = prompt.strip()
+    if len(clean) > MAX_PROMPT_LENGTH:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Prompt payload exceeds maximum allowed limit of {MAX_PROMPT_LENGTH} characters."
+        )
+        
+    # Strip dangerous HTML/script injection vectors
+    clean = re.sub(r"<\s*script[^>]*>.*?<\s*/\s*script\s*>", "", clean, flags=re.IGNORECASE | re.DOTALL)
+    clean = re.sub(r"<\s*iframe[^>]*>.*?<\s*/\s*iframe\s*>", "", clean, flags=re.IGNORECASE | re.DOTALL)
+    clean = re.sub(r"javascript:\s*", "", clean, flags=re.IGNORECASE)
+    
+    return clean
+
+
 # ==============================================================================
 # Complete 20 Sovereign D2C Commerce Protocols Registry
 # ==============================================================================
@@ -29,11 +61,12 @@ SOVEREIGN_D2C_PROTOCOLS: List[Dict[str, Any]] = [
         "aliases": ["tool_1_trend_scout", "tool_1", "tool1", "trend_scout", "research", "trend", "product_research", "autonomous product research & trend scout"],
         "system_instruction": (
             "You are the Alpha Product Trend Scout and Global E-commerce Arbitrage Intelligence AI for Levorify Sovereign D2C Platform. "
-            "Analyze consumer search velocity, TikTok/Instagram viral momentum, supply friction, and margin spread potential.\n"
+            "Analyze consumer search velocity, viral social momentum, supply friction, and margin spread potential.\n"
+            "Strict Profitability Rule: Enforce a minimum 3.5x-4x markup requirement (Target Retail Price >= 3.5x Landed COGS) to protect unit economics against high ad CAC and return reserves.\n"
             "Output a structured intelligence report with:\n"
-            "1. Trend Velocity Score (1-100) & Saturation Index\n"
-            "2. Target Demographic & Core Viral Hook\n"
-            "3. Landed COGS vs Target Retail Price Arbitrage (estimated margin spread)\n"
+            "1. Trend Velocity Score (1-100) & Market Saturation Index\n"
+            "2. Target Demographic & Core Viral Pattern-Interrupt Hook\n"
+            "3. Landed COGS vs Target Retail Price Arbitrage (estimated gross & contribution margin spread)\n"
             "4. 72-Hour Rapid Validation Protocol & Test Sourcing Strategy"
         ),
         "sample_prompt": "Category: Ergonomic desk accessories & titanium EDC gadgets. Target landed COGS: under $12. Retail potential: $49-$79. Evaluate trend velocity, competitive moat, and rapid validation launch plan."
@@ -47,6 +80,7 @@ SOVEREIGN_D2C_PROTOCOLS: List[Dict[str, Any]] = [
         "system_instruction": (
             "You are the Chief Merchandising Officer and Algorithmic Pricing Strategist for Levorify Sovereign D2C Platform. "
             "Design high-margin, high-AOV dynamic price anchoring and bundling architectures.\n"
+            "Strict Profitability Rule: Every bundle tier must be engineered to increase average order value (AOV) by at least 25-40% and expand net contribution margin by +₹600+ ($8+) per order.\n"
             "Output a structured bundle strategy with:\n"
             "1. Tiered Bundling Matrix (Single Anchor, Duo Sovereign Bundle, Family/Pro Bundle)\n"
             "2. Price Anchoring & Perceived Savings Breakdown\n"
@@ -115,10 +149,14 @@ SOVEREIGN_D2C_PROTOCOLS: List[Dict[str, Any]] = [
         "system_instruction": (
             "You are the Chief Financial Officer & Unit Economics Actuary for Levorify Sovereign D2C Platform. "
             "Calculate granular e-commerce unit economics and true net profit margins.\n"
+            "Strict Profitability Mandate: Compute the complete P&L Waterfall ensuring the merchant achieves a minimum target of ₹800+ ($10.50+) net contribution margin per delivered order.\n"
+            "Formulas to calculate rigorously:\n"
+            "- Net Contribution Margin = Gross Revenue - Landed COGS - Pick & Pack Shipping - Payment Gateway Fees (2%) - Blended CAC - RTO Reserve\n"
+            "- Break-Even ROAS = 1 / (Gross Margin %)\n"
             "Output a rigorous financial audit with:\n"
-            "1. Granular P&L Waterfall (Gross Revenue, Landed COGS, Shipping & Pick-Pack, Payment Gateway Fees, Blended CAC, Returns/RTO Reserve, Net Contribution Margin)\n"
-            "2. Break-Even ROAS Calculation\n"
-            "3. Net Margin % and Dollar Profit per Order\n"
+            "1. Granular P&L Waterfall Breakdown per order\n"
+            "2. Break-Even ROAS Calculation & Recommended Target Scale ROAS\n"
+            "3. Net Margin % and Dollar/Rupee Net Profit per Order\n"
             "4. Sensitivity Stress-Test (if CAC spikes 25% or RTO rises 5%)"
         ),
         "sample_prompt": "Selling Price: ₹2,499. Manufacturing/Landed COGS: ₹480. Shipping/Fulfillment: ₹180. Return/RTO Rate: 18%. Payment Gateway fee: 2%. Meta Ad Spend: ₹45,000 generating 50 orders (CAC ₹900). Compute granular unit economics waterfall and break-even ROAS."
@@ -148,12 +186,13 @@ SOVEREIGN_D2C_PROTOCOLS: List[Dict[str, Any]] = [
         "aliases": ["tool_8_rto_shield", "tool_8", "tool8", "rto_shield", "rto", "cod_shield", "fraud_shield", "fraud", "rto & cod risk shield (fraud & return mitigation)"],
         "system_instruction": (
             "You are the Chief Risk Officer and Fraud Mitigation AI for Levorify Sovereign D2C Platform. "
-            "Analyze COD (Cash on Delivery) customer and order telemetry to predict and prevent Return To Origin (RTO).\n"
-            "Output structured risk assessments with:\n"
-            "1. Risk Tier Classification (LOW, MEDIUM, HIGH, CRITICAL) & RTO Probability (%)\n"
-            "2. Telemetry Risk Factor Decomposition (Address quality, order timing, ticket size, geo-historical return profile)\n"
-            "3. Sovereign Risk Action Protocol (Auto-Approve, WhatsApp Prepayment Incentive 10% discount, OTP Verification, or Manual Verification)\n"
-            "4. Recommended WhatsApp/SMS verification copy"
+            "Evaluate orders for Return to Origin (RTO), COD rejection risk, and fraudulent customer behaviors.\n"
+            "Strict Prevention Rule: High-risk orders must be flagged with actionable intervention gates (WhatsApp 1-click address confirmation, ₹50 / $1 prepaid conversion incentive, or OTP dispatch verification).\n"
+            "Output structured risk intelligence with:\n"
+            "1. RTO Risk Score (0-100: Low / Medium / High / Critical) with Key Risk Drivers\n"
+            "2. Address Quality & Pin Code Serviceability Analysis\n"
+            "3. Immediate Mitigation Action (Auto-dispatch, WhatsApp confirmation, or Prepaid incentive)\n"
+            "4. Automated WhatsApp/SMS Customer Message Script for order verification"
         ),
         "sample_prompt": "Order Telemetry: PIN 110025 (New Delhi), Payment Method: COD, Cart Value: ₹3,850, SKU: Sovereign Leather Duffel, Customer History: 1 previous return, Order Time: 02:40 AM, IP Location: Outer Delhi. Assess RTO risk and recommend sovereign mitigation protocol."
     },
@@ -582,6 +621,7 @@ async def execute_tool(
     Executes any of the 20 Sovereign Commerce Protocols with specialized system instructions
     and BYOK dynamic key routing.
     """
+    clean_prompt = sanitize_telemetry_prompt(payload.prompt)
     protocol = resolve_tool_protocol(payload.tool_name)
     system_instruction = protocol["system_instruction"]
     canonical_name = protocol["name"]
@@ -589,7 +629,7 @@ async def execute_tool(
     response = await gemini_service.generate_d2c_content(
         api_key=gemini_key,
         system_instruction=system_instruction,
-        prompt=payload.prompt,
+        prompt=clean_prompt,
         temperature=0.75
     )
 

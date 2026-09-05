@@ -57,9 +57,9 @@ app.add_middleware(
 )
 
 
-# Latency Observability Middleware
+# Latency Observability & Enterprise Security Headers Middleware
 @app.middleware("http")
-async def add_process_time_header(request: Request, call_next):
+async def security_and_observability_middleware(request: Request, call_next):
     start_time = time.perf_counter()
     try:
         response = await call_next(request)
@@ -67,10 +67,19 @@ async def add_process_time_header(request: Request, call_next):
         logger.exception(f"Unhandled server exception during request {request.method} {request.url.path}: {exc}")
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"detail": "Internal sovereign server error. Please report incident ID to infrastructure ops."}
+            content={"detail": "Internal sovereign server error. Incident logged to secure telemetry."}
         )
     process_time = (time.perf_counter() - start_time) * 1000
     response.headers["X-Process-Time-Ms"] = f"{process_time:.2f}"
+    
+    # Enterprise Security Headers
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    
     return response
 
 

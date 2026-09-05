@@ -102,23 +102,45 @@ async def run_dashboard_integration_test():
     print("=== LEVORIFY DASHBOARD & BACKEND INTEGRATION TEST ===")
 
     await init_db()
-    print("[1/8] Database initialized.")
+    print("[1/10] Database initialized.")
 
     # Verify settings model is configured to active gemini-2.5-flash-lite
     assert settings.DEFAULT_GEMINI_MODEL == "gemini-2.5-flash-lite", (
         f"Expected DEFAULT_GEMINI_MODEL to be 'gemini-2.5-flash-lite', got '{settings.DEFAULT_GEMINI_MODEL}'"
     )
-    print(f"[2/8] Config Model Verification PASS: Default model is {settings.DEFAULT_GEMINI_MODEL}.")
+    print(f"[2/10] Config Model Verification PASS: Default model is {settings.DEFAULT_GEMINI_MODEL}.")
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
-        # 1. Verify /dashboard HTML page route & 20 protocol names
+        # 1. Verify /dashboard HTML page route, Security Headers, Handbook & Currency Switcher
         r_dash = await client.get("/dashboard")
         assert r_dash.status_code == 200, f"Failed to get dashboard: {r_dash.status_code}"
+        
+        # Verify Enterprise Security Headers
+        assert r_dash.headers.get("X-Frame-Options") == "SAMEORIGIN", "Missing X-Frame-Options"
+        assert r_dash.headers.get("X-Content-Type-Options") == "nosniff", "Missing X-Content-Type-Options"
+        assert "max-age" in r_dash.headers.get("Strict-Transport-Security", ""), "Missing HSTS"
+        assert "X-Process-Time-Ms" in r_dash.headers, "Missing Latency header"
+        print("[3/10] Enterprise Security Headers PASS: Frame, nosniff, HSTS, and Latency verified.")
+
         dash_text = r_dash.text
         assert "Levorify OS | Sovereign Merchant Dashboard" in dash_text
         assert "BYOK Vault" in dash_text
         assert "Gemini 2.5 Flash Lite" in dash_text
+        
+        # Verify In-App Operator Handbook & Onboarding Tour UI
+        assert "Sovereign Operator Handbook" in dash_text
+        assert "Start Guided Tour" in dash_text
+        assert "The ₹800+ Net Margin Rulebook" in dash_text
+        assert "BYOK Vault Enclave" in dash_text
+        assert "20 Protocols Atlas" in dash_text
+        
+        # Verify Geo-Currency Switcher
+        assert "currency-selector" in dash_text
+        assert "curr-inr" in dash_text
+        assert "curr-usd" in dash_text
+        assert "curr-eur" in dash_text
+        assert "curr-gbp" in dash_text
 
         expected_tools = [
             "Tool #1: Autonomous Product Research & Trend Scout",
@@ -145,7 +167,7 @@ async def run_dashboard_integration_test():
 
         for expected_tool in expected_tools:
             assert expected_tool in dash_text, f"Missing tool in dashboard.html: '{expected_tool}'"
-        print(f"[3/8] Dashboard HTML serving PASS: All 20 Sovereign Protocols rendered in select menu.")
+        print(f"[4/10] Dashboard HTML serving PASS: All 20 Sovereign Protocols, Handbook & Currency Switcher rendered.")
 
         # 2. Register node
         uid = str(uuid.uuid4())[:8]
@@ -158,7 +180,7 @@ async def run_dashboard_integration_test():
         }
         r_reg = await client.post("/api/v1/auth/register", json=reg_payload)
         assert r_reg.status_code == 201, f"Registration failed: {r_reg.text}"
-        print(f"[4/8] Node Registration PASS: Created user for {test_email}.")
+        print(f"[5/10] Node Registration PASS: Created user for {test_email}.")
 
         # 3. Form-based OAuth2 login matching dashboard handleAuth()
         form_data = {
@@ -171,13 +193,13 @@ async def run_dashboard_integration_test():
         access_token = token_data["access_token"]
         assert access_token
         auth_headers = {"Authorization": f"Bearer {access_token}"}
-        print(f"[5/8] Dashboard /auth/token Login PASS: Issued JWT length {len(access_token)}.")
+        print(f"[6/10] Dashboard /auth/token Login PASS: Issued JWT length {len(access_token)}.")
 
         # 4. Profile verification /auth/me for header display
         r_me = await client.get("/api/v1/auth/me", headers=auth_headers)
         assert r_me.status_code == 200
         assert r_me.json()["email"] == test_email
-        print(f"[6/8] Profile Retrieval PASS: Display identity {r_me.json()['email']}.")
+        print(f"[7/10] Profile Retrieval PASS: Display identity {r_me.json()['email']}.")
 
         # 5. Key configuration & status
         with patch("app.services.gemini_service.gemini_service.verify_key", new_callable=AsyncMock) as mock_verify:
@@ -191,26 +213,46 @@ async def run_dashboard_integration_test():
             assert r_config.status_code == 200, f"Key configure failed: {r_config.text}"
             assert r_config.json()["status"] == "success"
             masked = r_config.json()["masked_key"]
-            print(f"[7/8] BYOK Vault /keys/configure PASS: Vaulted hint {masked}.")
+            print(f"[8/10] BYOK Vault /keys/configure PASS: Vaulted hint {masked}.")
 
             r_status = await client.get("/api/v1/keys/status?provider=gemini", headers=auth_headers)
             assert r_status.status_code == 200
             assert r_status.json()["has_key"] is True
             assert r_status.json()["masked_key"] == masked
-            print(f"[7b/8] BYOK Vault /keys/status PASS: Verified active key presence.")
+            print(f"[8b/10] BYOK Vault /keys/status PASS: Verified active key presence.")
 
         # 6. Verify Protocols Registry Endpoint
         r_proto = await client.get("/api/v1/tools/protocols")
         assert r_proto.status_code == 200
         protocols_data = r_proto.json()
         assert len(protocols_data) == 20, f"Expected 20 protocols, got {len(protocols_data)}"
-        print(f"[7c/8] Tools Protocols Registry PASS: Found {len(protocols_data)} sovereign protocols.")
+        print(f"[8c/10] Tools Protocols Registry PASS: Found {len(protocols_data)} sovereign protocols.")
 
-        # 7. Tool execution dispatch across multiple protocols
+        # 7. Payload Sanitization & Anti-Injection Guard Testing
+        # A) Empty prompt check
+        r_empty = await client.post(
+            "/api/v1/tools/execute",
+            headers=auth_headers,
+            json={"tool_name": "tool_1_trend_scout", "prompt": "   "}
+        )
+        assert r_empty.status_code == 400, "Expected 400 for empty prompt"
+        assert "cannot be empty" in r_empty.json()["detail"]
+        
+        # B) Oversized prompt check (>15,000 chars)
+        r_huge = await client.post(
+            "/api/v1/tools/execute",
+            headers=auth_headers,
+            json={"tool_name": "tool_1_trend_scout", "prompt": "A" * 16000}
+        )
+        assert r_huge.status_code == 400, "Expected 400 for oversized prompt"
+        assert "exceeds maximum allowed limit" in r_huge.json()["detail"]
+        print("[9/10] Payload Sanitization & Anti-Injection Guard PASS: Handled empty and oversized payloads safely.")
+
+        # 8. Tool execution dispatch across multiple protocols with script injection stripping
         test_cases = [
-            ("tool_1_trend_scout", "Category: Titanium EDC gadgets. Target landed COGS: under $12.", "Trend Velocity Score"),
-            ("tool_6_unit_economics", "Selling Price: ₹2,499. COGS: ₹480. RTO: 18%.", "Granular P&L Waterfall"),
-            ("tool_8_rto_shield", "Order value ₹3,850, PIN 110025, COD order", "RTO Risk: LOW"),
+            ("tool_1_trend_scout", "<script>alert('xss')</script>Category: Titanium EDC gadgets. Target landed COGS: under $12.", "Trend Velocity Score"),
+            ("tool_6_unit_economics", "Selling Price: ₹2,499. COGS: ₹480. RTO: 18%.", "P&L Waterfall"),
+            ("tool_8_rto_shield", "Order value ₹3,850, PIN 110025, COD order", "RTO Risk"),
             ("tool_20_exit_strategist", "Brand revenue ₹6.5 Crore, 22% EBITDA margin.", "Valuation Driver Audit"),
         ]
 
@@ -238,7 +280,7 @@ async def run_dashboard_integration_test():
                 assert mock_snippet in res_json["result"]
                 print(f"       -> Protocol [{res_json['tool_name']}] dispatch PASS (model: {res_json['model']}).")
 
-        print("[8/8] Autonomous Engine Execution Routing PASS for all tested Sovereign Protocols.")
+        print("[10/10] Autonomous Engine Execution Routing PASS for all tested Sovereign Protocols.")
 
     await test_dynamic_fallback_and_discovery_engine()
     print("\n>>> ALL 20 SOVEREIGN D2C COMMERCE INTEGRATION CHECKS & DYNAMIC ENGINE CHECKS PASSED WITH 100% SUCCESS! <<<")
