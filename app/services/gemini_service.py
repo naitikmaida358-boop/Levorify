@@ -18,30 +18,48 @@ CACHE_TTL_SECONDS = 600.0  # 10 minutes
 def _score_model_preference(model_name: str) -> float:
     """
     Dynamically scores a model name so the newest and most efficient
-    flash-lite, flash, and pro models rank highest, without hardcoding static model names.
+    standard production Gemini flash-lite, flash, and pro models rank highest.
+    Strictly excludes non-Gemini, experimental, preview, antigravity, and interaction models.
     Higher score = higher priority in dynamic execution chain.
     """
     name = model_name.lower().strip().replace("models/", "")
 
-    # Exclude non-chat generative models, agentic pipelines, or models requiring Interactions API
+    # Must start with or contain standard 'gemini-' prefix
+    if not (name.startswith("gemini-") or "gemini-" in name):
+        return -1000.0
+
+    # Discard non-production, non-standard, preview, experimental, and non-chat models
     excluded_patterns = [
+        "antigravity", "experimental", "preview", "deep-research",
         "embed", "embedding", "imagen", "aqa", "realtime", "learnlm",
         "interaction", "interactions", "thinking", "whisper", "tts",
-        "deep-research", "robotics", "computer-use", "agent"
+        "robotics", "computer-use", "agent", "exp"
     ]
     if any(excluded in name for excluded in excluded_patterns):
         return -1000.0
 
     score = 0.0
 
-    # 1. Dynamic version extraction (sort by highest version first: e.g. 3.0 -> 300 pts, 2.5 -> 250 pts, 2.0 -> 200 pts, 1.5 -> 150 pts)
-    version_match = re.search(r"(\d+(?:\.\d+)?)", name)
+    # 1. Dynamic version extraction targeting valid generation version (e.g. gemini-2.5 -> 250 pts, gemini-3.0 -> 300 pts)
+    # Exclude arbitrary 4-digit date or year tokens like 05-2026
+    version_match = re.search(r"gemini-(\d+(?:\.\d+)?)", name)
     if version_match:
         try:
             ver = float(version_match.group(1))
-            score += ver * 100.0
+            if ver < 10.0:  # Generation version ceiling (e.g. 1.5, 2.0, 2.5, 3.0)
+                score += ver * 100.0
         except ValueError:
             pass
+    else:
+        # Fallback version extraction if prefix varies
+        v_match = re.search(r"(\d+(?:\.\d+)?)", name)
+        if v_match:
+            try:
+                ver = float(v_match.group(1))
+                if ver < 10.0:
+                    score += ver * 100.0
+            except ValueError:
+                pass
 
     # 2. Preference hierarchy for sovereign D2C commerce tasks (ultra-fast / economical flash-lite first)
     if "flash-lite" in name:
@@ -52,12 +70,8 @@ def _score_model_preference(model_name: str) -> float:
         score += 30.0
     elif "ultra" in name:
         score += 15.0
-    elif "gemini" in name:
+    else:
         score += 10.0
-
-    # 3. Slight penalty for experimental / preview builds when stable releases of same version exist
-    if "preview" in name or "exp" in name:
-        score -= 5.0
 
     return score
 
@@ -139,8 +153,10 @@ class GeminiBYOKService:
             should_close_client = True
 
         excluded_model_words = [
-            "interaction", "interactions", "deep-research", "embedding",
-            "imagen", "aqa", "robotics", "realtime", "thinking", "whisper", "tts"
+            "antigravity", "experimental", "preview", "deep-research",
+            "interaction", "interactions", "embedding", "embed",
+            "imagen", "aqa", "robotics", "realtime", "thinking",
+            "whisper", "tts", "agent", "computer-use", "learnlm", "exp"
         ]
 
         try:
@@ -151,12 +167,13 @@ class GeminiBYOKService:
                         data = res.json()
                         raw_models = data.get("models", [])
                         
-                        # STRICTLY filter for models supporting 'generateContent'
+                        # STRICTLY filter for standard production Gemini models supporting 'generateContent'
                         capable = [
                             m.get("name", "").replace("models/", "").strip()
                             for m in raw_models
                             if "generateContent" in m.get("supportedGenerationMethods", [])
                             and m.get("name")
+                            and (m.get("name", "").lower().replace("models/", "").startswith("gemini-") or "gemini-" in m.get("name", "").lower())
                             and not any(bad in m.get("name", "").lower() for bad in excluded_model_words)
                         ]
                         
@@ -170,7 +187,7 @@ class GeminiBYOKService:
                         if scored:
                             discovered_models = scored
                             logger.info(
-                                f"Auto-discovered {len(discovered_models)} active generation models from Google runtime. "
+                                f"Auto-discovered {len(discovered_models)} active production generation models from Google runtime. "
                                 f"Single top active model resolved: {discovered_models[0]}"
                             )
                             break
@@ -223,7 +240,7 @@ class GeminiBYOKService:
         # 1. Caller specified model (if explicitly requested and not 'gemini-auto' or default)
         if requested_model and requested_model not in ("gemini-auto", "auto", "default"):
             clean_req = requested_model.replace("models/", "").strip()
-            if clean_req and _score_model_preference(clean_req) > 0:
+            if clean_req:
                 candidates.append(clean_req)
 
         # 2. Live dynamic runtime discovery from Google
@@ -261,13 +278,21 @@ class GeminiBYOKService:
                 try:
                     res = await client.get(f"{base}/models", params={"key": clean_key})
                     if res.status_code == 200:
-                        # Auto-populate discovery cache from successful response
+                        # Auto-populate discovery cache from successful response with strict standard production filtering
                         data = res.json()
                         raw_models = data.get("models", [])
                         capable = [
                             m.get("name", "").replace("models/", "").strip()
                             for m in raw_models
                             if "generateContent" in m.get("supportedGenerationMethods", [])
+                            and m.get("name")
+                            and (m.get("name", "").lower().replace("models/", "").startswith("gemini-") or "gemini-" in m.get("name", "").lower())
+                            and not any(bad in m.get("name", "").lower() for bad in [
+                                "antigravity", "experimental", "preview", "deep-research",
+                                "interaction", "interactions", "embedding", "embed",
+                                "imagen", "aqa", "robotics", "realtime", "thinking",
+                                "whisper", "tts", "agent", "computer-use", "learnlm", "exp"
+                            ])
                         ]
                         scored = sorted(
                             [m for m in capable if _score_model_preference(m) > 0],
@@ -417,6 +442,54 @@ class GeminiBYOKService:
                             
                             msg_lower = msg.lower()
 
+                            # 1. Developer instruction compatibility fallback & retry
+                            if "developer instruction" in msg_lower:
+                                logger.warning(
+                                    f"Google returned developer instruction error for '{candidate_model}': {msg}. "
+                                    f"Attempting immediate compatibility retry with system directive merged into prompt..."
+                                )
+                                merged_prompt = (
+                                    f"[SYSTEM DIRECTIVE]\n{system_instruction}\n\n[USER REQUEST]\n{prompt}"
+                                    if system_instruction else prompt
+                                )
+                                merged_payload = {
+                                    "contents": [{"parts": [{"text": merged_prompt}]}],
+                                    "generationConfig": generation_config
+                                }
+                                retry_succeeded = False
+                                try:
+                                    retry_res = await client.post(url, headers=headers, json=merged_payload, params=params)
+                                    if retry_res.status_code == 200:
+                                        logger.info(
+                                            f"Compatibility retry succeeded for '{candidate_model}' "
+                                            f"with merged prompt directive."
+                                        )
+                                        response = retry_res
+                                        successful_model = candidate_model
+                                        retry_succeeded = True
+                                        break
+                                    else:
+                                        logger.warning(
+                                            f"Compatibility retry failed for '{candidate_model}' (HTTP {retry_res.status_code}). "
+                                            f"Evicting model from discovery cache and cascading to stable fallback..."
+                                        )
+                                except Exception as retry_exc:
+                                    logger.warning(f"Error during compatibility retry on '{candidate_model}': {retry_exc}")
+
+                                if not retry_succeeded:
+                                    # Evict model from discovery cache
+                                    key_hash = hashlib.sha256(clean_key.encode("utf-8")).hexdigest()
+                                    if key_hash in _DISCOVERY_CACHE:
+                                        cached_models = _DISCOVERY_CACHE[key_hash].get("models", [])
+                                        _DISCOVERY_CACHE[key_hash]["models"] = [m for m in cached_models if m != candidate_model]
+
+                                    # Cascade to gemini-2.5-flash-lite or gemini-1.5-flash
+                                    fallbacks = [fb for fb in ["gemini-2.5-flash-lite", "gemini-1.5-flash"] if fb not in tried_models]
+                                    if fallbacks:
+                                        candidate_queue = fallbacks + [c for c in candidate_queue if c not in fallbacks]
+                                    last_error_detail = msg
+                                    break
+
                             # If Google reports "Interactions API" error, immediately default fallback to standard gemini-2.5-flash-lite
                             if "interaction" in msg_lower or "interactions api" in msg_lower:
                                 logger.warning(
@@ -424,6 +497,12 @@ class GeminiBYOKService:
                                     f"Immediately defaulting fallback cascade to standard 'gemini-2.5-flash-lite'..."
                                 )
                                 last_error_detail = msg
+                                # Evict from discovery cache
+                                key_hash = hashlib.sha256(clean_key.encode("utf-8")).hexdigest()
+                                if key_hash in _DISCOVERY_CACHE:
+                                    cached_models = _DISCOVERY_CACHE[key_hash].get("models", [])
+                                    _DISCOVERY_CACHE[key_hash]["models"] = [m for m in cached_models if m != candidate_model]
+
                                 # Immediately push standard gemini-2.5-flash-lite and stable fallbacks to the front of queue
                                 if "gemini-2.5-flash-lite" not in tried_models:
                                     candidate_queue = ["gemini-2.5-flash-lite"] + [c for c in candidate_queue if c != "gemini-2.5-flash-lite"]

@@ -24,17 +24,27 @@ async def test_dynamic_fallback_and_discovery_engine():
     score_25 = _score_model_preference("gemini-2.5-flash-lite")
     score_15 = _score_model_preference("gemini-1.5-flash")
     score_embed = _score_model_preference("text-embedding-004")
+    score_antigravity = _score_model_preference("antigravity-preview-05-2026")
+    score_preview = _score_model_preference("gemini-1.5-pro-preview-0409")
+    score_exp = _score_model_preference("gemini-experimental")
 
     assert score_future > score_25 > score_15 > 0, "Dynamic scoring failed version/tier ordering"
     assert score_embed < 0, "Embedding models must have negative score"
-    print("  [A] Dynamic Model Preference Scoring: PASS (3.0 > 2.5 > 1.5, embeddings excluded).")
+    assert score_antigravity < 0, "Antigravity models must be discarded"
+    assert score_preview < 0, "Preview models must be discarded"
+    assert score_exp < 0, "Experimental models must be discarded"
+    print("  [A] Dynamic Model Preference Scoring: PASS (3.0 > 2.5 > 1.5, antigravity/preview/experimental/embeddings excluded).")
 
-    # 2. Test runtime model discovery from mock Google /models endpoint (verifying interaction models are filtered out)
+    # 2. Test runtime model discovery from mock Google /models endpoint (verifying non-production and preview models are filtered out)
     mock_models_response = {
         "models": [
             {
                 "name": "models/text-embedding-004",
                 "supportedGenerationMethods": ["embedContent"]
+            },
+            {
+                "name": "models/antigravity-preview-05-2026",
+                "supportedGenerationMethods": ["generateContent"]
             },
             {
                 "name": "models/gemini-experimental-interaction",
@@ -49,7 +59,7 @@ async def test_dynamic_fallback_and_discovery_engine():
                 "supportedGenerationMethods": ["generateContent", "countTokens"]
             },
             {
-                "name": "models/gemini-3.0-flash-lite-preview",
+                "name": "models/gemini-3.0-flash-lite",
                 "supportedGenerationMethods": ["generateContent"]
             }
         ]
@@ -64,13 +74,15 @@ async def test_dynamic_fallback_and_discovery_engine():
 
     discovered = await GeminiBYOKService.discover_available_models("AIzaSyFakeKey_DynamicTest", client=mock_client)
     assert "text-embedding-004" not in discovered
+    assert "antigravity-preview-05-2026" not in discovered, "Antigravity preview models must be filtered out of discovery"
     assert "gemini-experimental-interaction" not in discovered, "Interaction models must be filtered out of discovery"
     assert "gemini-2.5-flash-lite" in discovered
-    print(f"  [B] Runtime Model Discovery: PASS (discovered: {discovered}, interaction models filtered).")
+    assert "gemini-3.0-flash-lite" in discovered
+    print(f"  [B] Runtime Model Discovery: PASS (discovered: {discovered}, non-Gemini & preview models filtered).")
 
     # 2b. Test True Latest Active Model Auto-Selection
     latest_active = await GeminiBYOKService.get_latest_active_model("AIzaSyFakeKey_DynamicTest", client=mock_client)
-    assert latest_active == "gemini-3.0-flash-lite-preview", f"Expected highest rated active model 'gemini-3.0-flash-lite-preview', got {latest_active}"
+    assert latest_active == "gemini-3.0-flash-lite", f"Expected highest rated active model 'gemini-3.0-flash-lite', got {latest_active}"
     
     candidates = await GeminiBYOKService.get_prioritized_candidates("AIzaSyFakeKey_DynamicTest", client=mock_client)
     assert candidates[0] == latest_active, f"Top candidate should match single latest active model: {candidates[0]}"
@@ -151,6 +163,56 @@ async def test_dynamic_fallback_and_discovery_engine():
         assert res_inter["model"] == "gemini-2.5-flash-lite", f"Expected fallback to gemini-2.5-flash-lite, got {res_inter['model']}"
         assert "Standard generateContent execution succeeded" in res_inter["result"]
         print(f"  [D] 'Interactions API' Error Fallback Cascade: PASS (recovered via: {res_inter['model']}).")
+
+    # 5. Test "Developer instruction is not enabled" compatibility fallback and cascade
+    dev_call_history = []
+    async def mock_post_handler_dev_instruction(url, **kwargs):
+        req = Request("POST", url)
+        payload = kwargs.get("json", {})
+        dev_call_history.append({"url": url, "payload": payload})
+
+        # When called with systemInstruction, simulate Google API error
+        if "systemInstruction" in payload:
+            return Response(
+                400,
+                request=req,
+                json={"error": {"message": "Developer instruction is not enabled for models/antigravity-preview-05-2026"}}
+            )
+        
+        # When retried with merged prompt without systemInstruction
+        parts = payload.get("contents", [{}])[0].get("parts", [{}])[0].get("text", "")
+        if "[SYSTEM DIRECTIVE]" in parts and "[USER REQUEST]" in parts:
+            return Response(
+                200,
+                request=req,
+                json={
+                    "candidates": [{
+                        "content": {"parts": [{"text": "Merged system directive execution succeeded cleanly."}]}
+                    }],
+                    "usageMetadata": {"totalTokenCount": 134}
+                }
+            )
+        
+        return Response(404, request=req, json={"error": {"message": "Not found"}})
+
+    with patch("app.services.gemini_service.GeminiBYOKService.discover_available_models", new_callable=AsyncMock) as mock_disc, \
+         patch("httpx.AsyncClient.post", side_effect=mock_post_handler_dev_instruction):
+        mock_disc.return_value = ["gemini-2.5-flash-lite", "gemini-1.5-flash"]
+
+        res_dev = await GeminiBYOKService.generate_d2c_content(
+            api_key="AIzaSyTest_DevInstKey",
+            system_instruction="You are an autonomous D2C agent.",
+            prompt="Execute profit calculator.",
+            model="antigravity-preview-05-2026"
+        )
+        assert res_dev["model"] == "antigravity-preview-05-2026"
+        assert "Merged system directive execution succeeded" in res_dev["result"]
+        # Verify 2 calls occurred: first with systemInstruction (failed 400), second with merged prompt (succeeded 200)
+        assert len(dev_call_history) == 2
+        assert "systemInstruction" in dev_call_history[0]["payload"]
+        assert "systemInstruction" not in dev_call_history[1]["payload"]
+        assert "[SYSTEM DIRECTIVE]" in dev_call_history[1]["payload"]["contents"][0]["parts"][0]["text"]
+        print("  [E] Developer Instruction Compatibility Retry: PASS (retried with merged prompt directive).")
 
 
 async def run_dashboard_integration_test():
