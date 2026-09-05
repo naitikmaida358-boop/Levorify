@@ -23,8 +23,11 @@ def _score_model_preference(model_name: str) -> float:
     """
     name = model_name.lower().strip().replace("models/", "")
 
-    # Exclude non-chat generative models (embeddings, imagen, audio-only, aqa, etc.)
-    if any(excluded in name for excluded in ["embedding", "imagen", "aqa", "realtime", "learnlm"]):
+    # Exclude non-chat generative models or models requiring the Interactions API
+    if any(excluded in name for excluded in [
+        "embedding", "imagen", "aqa", "realtime", "learnlm",
+        "interaction", "interactions", "thinking", "whisper", "tts"
+    ]):
         return -1000.0
 
     score = 0.0
@@ -50,32 +53,37 @@ def _score_model_preference(model_name: str) -> float:
     elif "gemini" in name:
         score += 10.0
 
-    # 3. Slight penalty for experimental / preview builds when stable releases exist
+    # 3. Penalty for experimental / preview builds when stable releases exist
     if "preview" in name or "exp" in name:
-        score -= 5.0
+        score -= 20.0
 
     return score
 
 
 def _generate_pattern_fallback_models() -> List[str]:
     """
-    Generates a dynamic pattern-based candidate chain if runtime discovery is unavailable.
-    Iterates modern Gemini model generations and tiers dynamically.
+    Generates a candidate chain targeting standard content generation endpoints (:generateContent).
+    Explicitly prioritizes stable models (gemini-2.5-flash-lite, gemini-1.5-flash, gemini-1.5-pro).
     """
-    tiers = ["flash-lite", "flash", "pro"]
-    generations = ["2.5", "2.0", "1.5"]
+    stable_models = [
+        "gemini-2.5-flash-lite",
+        "gemini-1.5-flash",
+        "gemini-1.5-pro",
+        "gemini-2.0-flash",
+        "gemini-2.0-flash-lite"
+    ]
     fallback_list: List[str] = []
     
-    # Priority: configured model first
+    # Priority: configured model first if provided and valid
     configured = getattr(settings, "DEFAULT_GEMINI_MODEL", "gemini-2.5-flash-lite")
     if configured:
-        fallback_list.append(configured.replace("models/", "").strip())
+        cleaned = configured.replace("models/", "").strip()
+        if cleaned and not any(ex in cleaned.lower() for ex in ["interaction", "interactions"]):
+            fallback_list.append(cleaned)
 
-    for gen in generations:
-        for tier in tiers:
-            candidate = f"gemini-{gen}-{tier}"
-            if candidate not in fallback_list:
-                fallback_list.append(candidate)
+    for candidate in stable_models:
+        if candidate not in fallback_list:
+            fallback_list.append(candidate)
 
     return fallback_list
 
@@ -138,12 +146,13 @@ class GeminiBYOKService:
                         data = res.json()
                         raw_models = data.get("models", [])
                         
-                        # Filter models that support generateContent
+                        # Filter models that support generateContent and exclude interaction-only or non-standard models
                         capable = [
                             m.get("name", "").replace("models/", "").strip()
                             for m in raw_models
                             if "generateContent" in m.get("supportedGenerationMethods", [])
                             and m.get("name")
+                            and not any(bad in m.get("name", "").lower() for bad in ["interaction", "interactions", "embedding", "imagen", "aqa", "realtime", "thinking"])
                         ]
                         
                         # Score and rank discovered models
@@ -184,31 +193,31 @@ class GeminiBYOKService:
     ) -> List[str]:
         """
         Builds a robust, deduplicated candidate chain ordered by preference:
-        1. Explicit user/caller requested model (if any)
+        1. Explicit user/caller requested model (if any, excluding interaction models)
         2. Configured default model from settings
         3. Dynamically discovered capable models from Google's runtime API
-        4. Pattern-based fallback matrix
+        4. Pattern-based fallback matrix with stable models (gemini-2.5-flash-lite, gemini-1.5-flash, gemini-1.5-pro)
         """
         candidates: List[str] = []
 
         # 1. Caller specified model
         if requested_model:
             clean_req = requested_model.replace("models/", "").strip()
-            if clean_req:
+            if clean_req and not any(bad in clean_req.lower() for bad in ["interaction", "interactions"]):
                 candidates.append(clean_req)
 
         # 2. Configured model
-        configured = getattr(settings, "DEFAULT_GEMINI_MODEL", None)
+        configured = getattr(settings, "DEFAULT_GEMINI_MODEL", "gemini-2.5-flash-lite")
         if configured:
             clean_cfg = configured.replace("models/", "").strip()
-            if clean_cfg and clean_cfg not in candidates:
+            if clean_cfg and clean_cfg not in candidates and not any(bad in clean_cfg.lower() for bad in ["interaction", "interactions"]):
                 candidates.append(clean_cfg)
 
         # 3. Dynamic runtime discovery from Google
         try:
             discovered = await cls.discover_available_models(api_key, client=client)
             for m in discovered:
-                if m not in candidates:
+                if m not in candidates and not any(bad in m.lower() for bad in ["interaction", "interactions"]):
                     candidates.append(m)
         except Exception as exc:
             logger.warning(f"Model auto-discovery encountered non-fatal error: {exc}")
@@ -217,6 +226,11 @@ class GeminiBYOKService:
         for pattern_model in _generate_pattern_fallback_models():
             if pattern_model not in candidates:
                 candidates.append(pattern_model)
+
+        # Ensure primary stable models are always present in fallback chain
+        for stable in ["gemini-2.5-flash-lite", "gemini-1.5-flash", "gemini-1.5-pro"]:
+            if stable not in candidates:
+                candidates.append(stable)
 
         return candidates
 
@@ -353,15 +367,23 @@ class GeminiBYOKService:
         last_error_detail: Optional[str] = None
 
         async with httpx.AsyncClient(timeout=30.0) as client:
-            # Build dynamic, prioritized candidate list
+            # Build dynamic, prioritized candidate list targeting standard content generation endpoints
             candidates = await cls.get_prioritized_candidates(
                 api_key=clean_key,
                 requested_model=model,
                 client=client
             )
 
-            # Try candidate models across candidate base URLs
-            for candidate_model in candidates:
+            candidate_queue = list(candidates)
+            tried_models = set()
+
+            # Iterate through candidate models with dynamic fallback support
+            while candidate_queue:
+                candidate_model = candidate_queue.pop(0)
+                if candidate_model in tried_models:
+                    continue
+                tried_models.add(candidate_model)
+
                 for base in candidate_bases:
                     url = f"{base}/models/{candidate_model}:generateContent"
                     try:
@@ -385,10 +407,25 @@ class GeminiBYOKService:
                             except Exception:
                                 msg = res.text
                             
+                            msg_lower = msg.lower()
+
+                            # If Google reports "Interactions API" error, immediately default fallback to standard gemini-2.5-flash-lite
+                            if "interaction" in msg_lower or "interactions api" in msg_lower:
+                                logger.warning(
+                                    f"Google returned Interactions API error for '{candidate_model}': {msg}. "
+                                    f"Immediately defaulting fallback cascade to standard 'gemini-2.5-flash-lite'..."
+                                )
+                                last_error_detail = msg
+                                # Immediately push standard gemini-2.5-flash-lite and stable fallbacks to the front of queue
+                                if "gemini-2.5-flash-lite" not in tried_models:
+                                    candidate_queue = ["gemini-2.5-flash-lite"] + [c for c in candidate_queue if c != "gemini-2.5-flash-lite"]
+                                break
+
                             # If model is unsupported/not found for this version/endpoint, fall back
-                            if "not found" in msg.lower() or "unsupported" in msg.lower():
+                            if any(phrase in msg_lower for phrase in ["not found", "unsupported", "only supports"]):
                                 logger.info(f"Model '{candidate_model}' reported unsupported: {msg}. Cascading...")
-                                continue
+                                last_error_detail = msg
+                                break
                             
                             # Otherwise, authentication or client payload error
                             raise HTTPException(

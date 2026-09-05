@@ -80,12 +80,23 @@ async def security_and_observability_middleware(request: Request, call_next):
     response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
     response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     
+    # Cache-Busting Headers for Web/Mobile Browsers
+    if request.url.path in ("/", "/dashboard", "/landing") or "text/html" in response.headers.get("content-type", ""):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    
     return response
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INDEX_PATH = os.path.join(BASE_DIR, "index.html")
 DASHBOARD_PATH = os.path.join(BASE_DIR, "dashboard.html")
+NO_CACHE_HEADERS = {
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache",
+    "Expires": "0"
+}
 
 
 # Root, Landing, and Dashboard Probes
@@ -96,7 +107,7 @@ async def root(request: Request):
     """
     accept_header = request.headers.get("accept", "")
     if "text/html" in accept_header and os.path.exists(INDEX_PATH):
-        return FileResponse(INDEX_PATH, media_type="text/html")
+        return FileResponse(INDEX_PATH, media_type="text/html", headers=NO_CACHE_HEADERS)
 
     return {
         "platform": "Levorify Sovereign D2C Platform",
@@ -115,7 +126,7 @@ async def dashboard():
     Sovereign Merchant Operating System Console (BYOK Vault + Tool Dispatch).
     """
     if os.path.exists(DASHBOARD_PATH):
-        return FileResponse(DASHBOARD_PATH, media_type="text/html")
+        return FileResponse(DASHBOARD_PATH, media_type="text/html", headers=NO_CACHE_HEADERS)
     return HTMLResponse("<h3>Dashboard file not found.</h3>", status_code=404)
 
 
@@ -125,7 +136,7 @@ async def landing():
     Sovereign D2C Platform Landing Experience.
     """
     if os.path.exists(INDEX_PATH):
-        return FileResponse(INDEX_PATH, media_type="text/html")
+        return FileResponse(INDEX_PATH, media_type="text/html", headers=NO_CACHE_HEADERS)
     return HTMLResponse("<h3>Landing page file not found.</h3>", status_code=404)
 
 

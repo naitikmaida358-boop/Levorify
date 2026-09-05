@@ -29,12 +29,16 @@ async def test_dynamic_fallback_and_discovery_engine():
     assert score_embed < 0, "Embedding models must have negative score"
     print("  [A] Dynamic Model Preference Scoring: PASS (3.0 > 2.5 > 1.5, embeddings excluded).")
 
-    # 2. Test runtime model discovery from mock Google /models endpoint
+    # 2. Test runtime model discovery from mock Google /models endpoint (verifying interaction models are filtered out)
     mock_models_response = {
         "models": [
             {
                 "name": "models/text-embedding-004",
                 "supportedGenerationMethods": ["embedContent"]
+            },
+            {
+                "name": "models/gemini-experimental-interaction",
+                "supportedGenerationMethods": ["generateContent"]
             },
             {
                 "name": "models/gemini-1.5-flash",
@@ -60,19 +64,19 @@ async def test_dynamic_fallback_and_discovery_engine():
 
     discovered = await GeminiBYOKService.discover_available_models("AIzaSyFakeKey_DynamicTest", client=mock_client)
     assert "text-embedding-004" not in discovered
+    assert "gemini-experimental-interaction" not in discovered, "Interaction models must be filtered out of discovery"
     assert "gemini-2.5-flash-lite" in discovered
-    assert discovered[0] == "gemini-3.0-flash-lite-preview" or discovered[0] == "gemini-2.5-flash-lite"
-    print(f"  [B] Runtime Model Discovery: PASS (discovered: {discovered}).")
+    print(f"  [B] Runtime Model Discovery: PASS (discovered: {discovered}, interaction models filtered).")
 
     # 3. Test self-healing 404 fallback cascade in generate_d2c_content
     # Primary candidate returns 404, secondary candidate returns 200
-    call_count = 0
-    async def mock_post_handler(url, **kwargs):
-        nonlocal call_count
-        call_count += 1
+    call_count_404 = 0
+    async def mock_post_handler_404(url, **kwargs):
+        nonlocal call_count_404
+        call_count_404 += 1
         req = Request("POST", url)
         # First candidate fails with 404
-        if "gemini-2.5-flash-lite" in url and call_count == 1:
+        if "gemini-2.5-flash-lite" in url and call_count_404 == 1:
             return Response(404, request=req, json={"error": {"message": "models/gemini-2.5-flash-lite is not found"}})
         # Fallback candidate succeeds with 200
         return Response(
@@ -87,7 +91,7 @@ async def test_dynamic_fallback_and_discovery_engine():
         )
 
     with patch("app.services.gemini_service.GeminiBYOKService.discover_available_models", new_callable=AsyncMock) as mock_disc, \
-         patch("httpx.AsyncClient.post", side_effect=mock_post_handler):
+         patch("httpx.AsyncClient.post", side_effect=mock_post_handler_404):
         mock_disc.return_value = ["gemini-2.5-flash-lite", "gemini-2.0-flash-lite", "gemini-1.5-flash"]
 
         result = await GeminiBYOKService.generate_d2c_content(
@@ -99,6 +103,46 @@ async def test_dynamic_fallback_and_discovery_engine():
         assert result["result"] == "Self-healing fallback execution succeeded seamlessly."
         assert result["total_tokens"] == 98
         print(f"  [C] Self-Healing 404 Fallback Cascade: PASS (recovered seamlessly using: {result['model']}).")
+
+    # 4. Test "Interactions API" 400 error fallback cascade defaulting immediately to standard gemini-2.5-flash-lite
+    call_history = []
+    async def mock_post_handler_interactions(url, **kwargs):
+        req = Request("POST", url)
+        call_history.append(url)
+        # Unsupported model returns Interactions API error
+        if "unsupported-model" in url or "interaction" in url:
+            return Response(
+                400,
+                request=req,
+                json={"error": {"message": "This model only supports Interactions API and cannot be used with generateContent."}}
+            )
+        # Standard gemini-2.5-flash-lite succeeds immediately
+        if "gemini-2.5-flash-lite" in url:
+            return Response(
+                200,
+                request=req,
+                json={
+                    "candidates": [{
+                        "content": {"parts": [{"text": "Standard generateContent execution succeeded via gemini-2.5-flash-lite."}]}
+                    }],
+                    "usageMetadata": {"totalTokenCount": 112}
+                }
+            )
+        return Response(404, request=req, json={"error": {"message": "Not found"}})
+
+    with patch("app.services.gemini_service.GeminiBYOKService.discover_available_models", new_callable=AsyncMock) as mock_disc, \
+         patch("httpx.AsyncClient.post", side_effect=mock_post_handler_interactions):
+        mock_disc.return_value = ["gemini-2.5-flash-lite", "gemini-1.5-flash"]
+
+        res_inter = await GeminiBYOKService.generate_d2c_content(
+            api_key="AIzaSyTest_InteractionsKey",
+            system_instruction="You are a D2C strategist.",
+            prompt="Test Interactions API error recovery",
+            model="unsupported-model"
+        )
+        assert res_inter["model"] == "gemini-2.5-flash-lite", f"Expected fallback to gemini-2.5-flash-lite, got {res_inter['model']}"
+        assert "Standard generateContent execution succeeded" in res_inter["result"]
+        print(f"  [D] 'Interactions API' Error Fallback Cascade: PASS (recovered via: {res_inter['model']}).")
 
 
 async def run_dashboard_integration_test():
@@ -115,16 +159,20 @@ async def run_dashboard_integration_test():
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
-        # 1. Verify /dashboard HTML page route, Security Headers, Handbook & Currency Switcher
+        # 1. Verify /dashboard HTML page route, Security Headers, Cache Headers, Handbook & Currency Switcher
         r_dash = await client.get("/dashboard")
         assert r_dash.status_code == 200, f"Failed to get dashboard: {r_dash.status_code}"
         
-        # Verify Enterprise Security Headers
+        # Verify Enterprise Security Headers & Mobile Cache-Control
         assert r_dash.headers.get("X-Frame-Options") == "SAMEORIGIN", "Missing X-Frame-Options"
         assert r_dash.headers.get("X-Content-Type-Options") == "nosniff", "Missing X-Content-Type-Options"
         assert "max-age" in r_dash.headers.get("Strict-Transport-Security", ""), "Missing HSTS"
         assert "X-Process-Time-Ms" in r_dash.headers, "Missing Latency header"
-        print("[3/10] Enterprise Security Headers PASS: Frame, nosniff, HSTS, and Latency verified.")
+        assert "no-cache" in r_dash.headers.get("Cache-Control", ""), "Missing Cache-Control in dashboard response"
+        assert "no-store" in r_dash.headers.get("Cache-Control", ""), "Missing no-store in dashboard response"
+        assert r_dash.headers.get("Pragma") == "no-cache", "Missing Pragma no-cache in dashboard response"
+        assert r_dash.headers.get("Expires") == "0", "Missing Expires 0 in dashboard response"
+        print("[3/10] Enterprise Security Headers & Cache-Control PASS: Frame, nosniff, HSTS, Latency, and No-Cache verified.")
 
         dash_text = r_dash.text
         assert "Levorify OS | Sovereign Merchant Dashboard" in dash_text
@@ -174,6 +222,12 @@ async def run_dashboard_integration_test():
             "Tool #20: Sovereign D2C Scale Roadmap & Exit Strategist",
         ]
 
+        # Verify Mobile Cache-Control Meta Tags & Version Strings
+        assert '<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">' in dash_text
+        assert '<meta http-equiv="Pragma" content="no-cache">' in dash_text
+        assert '<meta http-equiv="Expires" content="0">' in dash_text
+        assert '?v=2.0.1' in dash_text
+
         for expected_tool in expected_tools:
             assert expected_tool in dash_text, f"Missing tool in dashboard.html: '{expected_tool}'"
         print(f"[4/10] Dashboard HTML serving PASS: All 20 Sovereign Protocols, Handbook, Plan Banner & Currency Switcher rendered.")
@@ -181,7 +235,15 @@ async def run_dashboard_integration_test():
         # 1b. Verify Landing Page One-Time Purchase Pricing & Working CTAs
         r_landing = await client.get("/landing")
         assert r_landing.status_code == 200, f"Failed to get landing page: {r_landing.status_code}"
+        assert "no-cache" in r_landing.headers.get("Cache-Control", ""), "Missing Cache-Control header on landing"
+        assert "no-store" in r_landing.headers.get("Cache-Control", ""), "Missing no-store header on landing"
         landing_text = r_landing.text
+
+        # Verify Mobile Cache-Control Meta Tags & Version Strings on Landing
+        assert '<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">' in landing_text
+        assert '<meta http-equiv="Pragma" content="no-cache">' in landing_text
+        assert '<meta http-equiv="Expires" content="0">' in landing_text
+        assert '?v=2.0.1' in landing_text
 
         # Clean removal of old monthly SaaS recurring pricing
         assert "$1,950" not in landing_text, "Found old $1,950 pricing in landing page"
@@ -210,7 +272,7 @@ async def run_dashboard_integration_test():
         assert 'href="dashboard.html"' in landing_text
         assert "setPricingCurrency" in landing_text
         assert "initGeoCurrency" in landing_text
-        print("[4b/10] Landing Page Pricing PASS: Today's Special Launch Offer (INR 1,199 / 1,999 / 2,999 with strikethroughs) & Geo-location engine verified.")
+        print("[4b/10] Landing Page Pricing & Cache-Busting PASS: Verified no-cache tags, asset versions, and ₹1,199/₹1,999/₹2,999 pricing.")
 
         # 2. Register node
         uid = str(uuid.uuid4())[:8]
