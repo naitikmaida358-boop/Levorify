@@ -189,19 +189,19 @@ async def run_dashboard_integration_test():
         assert "$1,950/mo" not in landing_text
         assert "$4,910/mo" not in landing_text
 
-        # Presence of Affordable 3-Tier One-Time Purchase model (Capped below ₹3,000)
+        # Presence of Today's Special Launch Offer & Strikethroughs (Capped below ₹3,000)
+        assert "Today's Special Launch Offer - 80% Off" in landing_text
         assert "Starter Operator Pass" in landing_text
-        assert "₹999" in landing_text
+        assert "₹4,999" in landing_text
+        assert "₹1,199" in landing_text
         assert "Sovereign Lifetime Pro" in landing_text
+        assert "₹9,999" in landing_text
         assert "₹1,999" in landing_text
         assert "Ultimate Agency Suite" in landing_text
+        assert "₹14,999" in landing_text
         assert "₹2,999" in landing_text
         assert "ONE-TIME PAYMENT" in landing_text
         assert "ZERO MONTHLY SUBSCRIPTIONS" in landing_text
-
-        # Ensure no plans exceed ₹3,000 cap
-        assert "₹3,999" not in landing_text, "Found plan exceeding ₹3,000 cap"
-        assert "₹9,999" not in landing_text, "Found plan exceeding ₹3,000 cap"
 
         # Working Action buttons wired to dashboard with plan parameters
         assert 'href="dashboard.html?plan=starter"' in landing_text
@@ -210,7 +210,7 @@ async def run_dashboard_integration_test():
         assert 'href="dashboard.html"' in landing_text
         assert "setPricingCurrency" in landing_text
         assert "initGeoCurrency" in landing_text
-        print("[4b/10] Landing Page Pricing PASS: Affordable one-time structure (INR 999 / 1,999 / 2,999 capped < 3,000) & Geo-location engine verified.")
+        print("[4b/10] Landing Page Pricing PASS: Today's Special Launch Offer (INR 1,199 / 1,999 / 2,999 with strikethroughs) & Geo-location engine verified.")
 
         # 2. Register node
         uid = str(uuid.uuid4())[:8]
