@@ -1,26 +1,147 @@
 import asyncio
 import uuid
-from httpx import ASGITransport, AsyncClient
+from httpx import ASGITransport, AsyncClient, Response, Request
 from unittest.mock import patch, AsyncMock
 
 from app.main import app
 from app.core.database import init_db
+from app.core.config import settings
+from app.services.gemini_service import (
+    GeminiBYOKService,
+    _score_model_preference,
+    _generate_pattern_fallback_models
+)
+
+
+async def test_dynamic_fallback_and_discovery_engine():
+    print("\n=== TESTING GEMINI DYNAMIC DISCOVERY & SELF-HEALING ENGINE ===")
+
+    # 1. Test model preference scoring
+    score_future = _score_model_preference("gemini-3.0-flash-lite")
+    score_25 = _score_model_preference("gemini-2.5-flash-lite")
+    score_15 = _score_model_preference("gemini-1.5-flash")
+    score_embed = _score_model_preference("text-embedding-004")
+
+    assert score_future > score_25 > score_15 > 0, "Dynamic scoring failed version/tier ordering"
+    assert score_embed < 0, "Embedding models must have negative score"
+    print("  [A] Dynamic Model Preference Scoring: PASS (3.0 > 2.5 > 1.5, embeddings excluded).")
+
+    # 2. Test runtime model discovery from mock Google /models endpoint
+    mock_models_response = {
+        "models": [
+            {
+                "name": "models/text-embedding-004",
+                "supportedGenerationMethods": ["embedContent"]
+            },
+            {
+                "name": "models/gemini-1.5-flash",
+                "supportedGenerationMethods": ["generateContent"]
+            },
+            {
+                "name": "models/gemini-2.5-flash-lite",
+                "supportedGenerationMethods": ["generateContent", "countTokens"]
+            },
+            {
+                "name": "models/gemini-3.0-flash-lite-preview",
+                "supportedGenerationMethods": ["generateContent"]
+            }
+        ]
+    }
+
+    mock_client = AsyncMock()
+    mock_res = AsyncMock()
+    mock_res.status_code = 200
+    mock_res.json.return_value = mock_models_response
+    mock_client.get.return_value = mock_res
+
+    discovered = await GeminiBYOKService.discover_available_models("AIzaSyFakeKey_DynamicTest", client=mock_client)
+    assert "text-embedding-004" not in discovered
+    assert "gemini-2.5-flash-lite" in discovered
+    assert discovered[0] == "gemini-3.0-flash-lite-preview" or discovered[0] == "gemini-2.5-flash-lite"
+    print(f"  [B] Runtime Model Discovery: PASS (discovered: {discovered}).")
+
+    # 3. Test self-healing 404 fallback cascade in generate_d2c_content
+    # Primary model returns 404, secondary model returns 200
+    call_count = 0
+    async def mock_post_handler(url, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        req = Request("POST", url)
+        # First candidate fails with 404
+        if "gemini-2.5-flash-lite" in url and call_count == 1:
+            return Response(404, request=req, json={"error": {"message": "models/gemini-2.5-flash-lite is not found"}})
+        # Fallback candidate succeeds with 200
+        return Response(
+            200,
+            request=req,
+            json={
+                "candidates": [{
+                    "content": {"parts": [{"text": "Self-healing fallback execution succeeded seamlessly."}]}
+                }],
+                "usageMetadata": {"totalTokenCount": 98}
+            }
+        )
+
+    with patch("httpx.AsyncClient.post", side_effect=mock_post_handler):
+        result = await GeminiBYOKService.generate_d2c_content(
+            api_key="AIzaSyTest_FallbackKey",
+            system_instruction="You are a D2C strategist.",
+            prompt="Analyze SKU margins.",
+            model="gemini-2.5-flash-lite"
+        )
+        assert result["result"] == "Self-healing fallback execution succeeded seamlessly."
+        assert result["total_tokens"] == 98
+        print(f"  [C] Self-Healing 404 Fallback Cascade: PASS (recovered seamlessly using: {result['model']}).")
 
 
 async def run_dashboard_integration_test():
     print("=== LEVORIFY DASHBOARD & BACKEND INTEGRATION TEST ===")
 
     await init_db()
-    print("[1/7] Database initialized.")
+    print("[1/8] Database initialized.")
+
+    # Verify settings model is configured to active gemini-2.5-flash-lite
+    assert settings.DEFAULT_GEMINI_MODEL == "gemini-2.5-flash-lite", (
+        f"Expected DEFAULT_GEMINI_MODEL to be 'gemini-2.5-flash-lite', got '{settings.DEFAULT_GEMINI_MODEL}'"
+    )
+    print(f"[2/8] Config Model Verification PASS: Default model is {settings.DEFAULT_GEMINI_MODEL}.")
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
-        # 1. Verify /dashboard HTML page route
+        # 1. Verify /dashboard HTML page route & 20 protocol names
         r_dash = await client.get("/dashboard")
         assert r_dash.status_code == 200, f"Failed to get dashboard: {r_dash.status_code}"
-        assert "Levorify OS | Sovereign Merchant Dashboard" in r_dash.text
-        assert "BYOK Vault" in r_dash.text
-        print("[2/7] Dashboard HTML serving PASS: 200 OK.")
+        dash_text = r_dash.text
+        assert "Levorify OS | Sovereign Merchant Dashboard" in dash_text
+        assert "BYOK Vault" in dash_text
+        assert "Gemini 2.5 Flash Lite" in dash_text
+
+        expected_tools = [
+            "Tool #1: Autonomous Product Research & Trend Scout",
+            "Tool #2: Dynamic Price Anchoring & Bundling Matrix",
+            "Tool #3: High-Velocity Ad Copy & Creative Generator",
+            "Tool #4: Faceless Video Script & Hook Architecture",
+            "Tool #5: D2C Store Conversion Rate Optimization (CRO) Audit",
+            "Tool #6: Automated Profit Margin & Unit Economics Calculator",
+            "Tool #7: Competitor Price Scraping & Intelligence Shield",
+            "Tool #8: RTO & COD Risk Shield (Fraud & Return Mitigation)",
+            "Tool #9: WhatsApp & SMS Lifecycle Retention Flow Builder",
+            "Tool #10: Multi-Channel Attribution & ROAS Scaler",
+            "Tool #11: Inventory Demand Forecasting & Stockout Guard",
+            "Tool #12: Influencer Micro-Affiliate Outreach Engine",
+            "Tool #13: Marketplace Listing Optimizer (Amazon/Flipkart)",
+            "Tool #14: Refund & Chargeback Dispute Automator",
+            "Tool #15: Zero-Markup Global Supply Chain Router",
+            "Tool #16: Automated Email Sequence & Abandoned Cart Recovery",
+            "Tool #17: UGC Creative Brief & Creator Persona Synthesizer",
+            "Tool #18: Brand Trust & Social Proof Multiplier",
+            "Tool #19: Seasonal Flash Sale & Discount Architecture",
+            "Tool #20: Sovereign D2C Scale Roadmap & Exit Strategist",
+        ]
+
+        for expected_tool in expected_tools:
+            assert expected_tool in dash_text, f"Missing tool in dashboard.html: '{expected_tool}'"
+        print(f"[3/8] Dashboard HTML serving PASS: All 20 Sovereign Protocols rendered in select menu.")
 
         # 2. Register node
         uid = str(uuid.uuid4())[:8]
@@ -33,7 +154,7 @@ async def run_dashboard_integration_test():
         }
         r_reg = await client.post("/api/v1/auth/register", json=reg_payload)
         assert r_reg.status_code == 201, f"Registration failed: {r_reg.text}"
-        print(f"[3/7] Node Registration PASS: Created user for {test_email}.")
+        print(f"[4/8] Node Registration PASS: Created user for {test_email}.")
 
         # 3. Form-based OAuth2 login matching dashboard handleAuth()
         form_data = {
@@ -46,16 +167,15 @@ async def run_dashboard_integration_test():
         access_token = token_data["access_token"]
         assert access_token
         auth_headers = {"Authorization": f"Bearer {access_token}"}
-        print(f"[4/7] Dashboard /auth/token Login PASS: Issued JWT length {len(access_token)}.")
+        print(f"[5/8] Dashboard /auth/token Login PASS: Issued JWT length {len(access_token)}.")
 
         # 4. Profile verification /auth/me for header display
         r_me = await client.get("/api/v1/auth/me", headers=auth_headers)
         assert r_me.status_code == 200
         assert r_me.json()["email"] == test_email
-        print(f"[5/7] Profile Retrieval PASS: Display identity {r_me.json()['email']}.")
+        print(f"[6/8] Profile Retrieval PASS: Display identity {r_me.json()['email']}.")
 
         # 5. Key configuration & status
-        # Mock Gemini verification so we don't need a live outbound network call in offline test
         with patch("app.services.gemini_service.gemini_service.verify_key", new_callable=AsyncMock) as mock_verify:
             mock_verify.return_value = {"valid": True, "message": "Key verified"}
 
@@ -67,38 +187,57 @@ async def run_dashboard_integration_test():
             assert r_config.status_code == 200, f"Key configure failed: {r_config.text}"
             assert r_config.json()["status"] == "success"
             masked = r_config.json()["masked_key"]
-            print(f"[6/7] BYOK Vault /keys/configure PASS: Vaulted hint {masked}.")
+            print(f"[7/8] BYOK Vault /keys/configure PASS: Vaulted hint {masked}.")
 
             r_status = await client.get("/api/v1/keys/status?provider=gemini", headers=auth_headers)
             assert r_status.status_code == 200
             assert r_status.json()["has_key"] is True
             assert r_status.json()["masked_key"] == masked
-            print(f"[6b/7] BYOK Vault /keys/status PASS: Verified active key presence.")
+            print(f"[7b/8] BYOK Vault /keys/status PASS: Verified active key presence.")
 
-        # 6. Tool execution dispatch
+        # 6. Verify Protocols Registry Endpoint
+        r_proto = await client.get("/api/v1/tools/protocols")
+        assert r_proto.status_code == 200
+        protocols_data = r_proto.json()
+        assert len(protocols_data) == 20, f"Expected 20 protocols, got {len(protocols_data)}"
+        print(f"[7c/8] Tools Protocols Registry PASS: Found {len(protocols_data)} sovereign protocols.")
+
+        # 7. Tool execution dispatch across multiple protocols
+        test_cases = [
+            ("tool_1_trend_scout", "Category: Titanium EDC gadgets. Target landed COGS: under $12.", "Trend Velocity Score"),
+            ("tool_6_unit_economics", "Selling Price: ₹2,499. COGS: ₹480. RTO: 18%.", "Granular P&L Waterfall"),
+            ("tool_8_rto_shield", "Order value ₹3,850, PIN 110025, COD order", "RTO Risk: LOW"),
+            ("tool_20_exit_strategist", "Brand revenue ₹6.5 Crore, 22% EBITDA margin.", "Valuation Driver Audit"),
+        ]
+
         with patch("app.services.gemini_service.gemini_service.generate_d2c_content", new_callable=AsyncMock) as mock_gen:
-            mock_gen.return_value = {
-                "result": "RTO Risk: LOW (12%). Order telemetry shows verified urban delivery zone. Recommend auto-dispatch.",
-                "model": "gemini-1.5-flash",
-                "latency_ms": 142.5,
-                "total_tokens": 128
-            }
-
-            r_tool = await client.post(
-                "/api/v1/tools/execute",
-                headers=auth_headers,
-                json={
-                    "tool_name": "rto_shield",
-                    "prompt": "Order value ₹3,850, PIN 110025, COD order"
+            for tool_id, sample_prompt, mock_snippet in test_cases:
+                mock_gen.return_value = {
+                    "result": f"Execution output for {tool_id}. {mock_snippet} confirmed.",
+                    "model": "gemini-2.5-flash-lite",
+                    "latency_ms": 115.4,
+                    "total_tokens": 142
                 }
-            )
-            assert r_tool.status_code == 200, f"Tool execution failed: {r_tool.text}"
-            res_json = r_tool.json()
-            assert res_json["status"] == "success"
-            assert "RTO Risk: LOW" in res_json["result"]
-            print(f"[7/7] Autonomous Engine /tools/execute PASS: Received inference response.")
 
-    print("\n>>> ALL DASHBOARD INTEGRATION CHECKS PASSED WITH 100% SUCCESS! <<<")
+                r_tool = await client.post(
+                    "/api/v1/tools/execute",
+                    headers=auth_headers,
+                    json={
+                        "tool_name": tool_id,
+                        "prompt": sample_prompt
+                    }
+                )
+                assert r_tool.status_code == 200, f"Execution failed for {tool_id}: {r_tool.text}"
+                res_json = r_tool.json()
+                assert res_json["status"] == "success"
+                assert res_json["model"] == "gemini-2.5-flash-lite"
+                assert mock_snippet in res_json["result"]
+                print(f"       -> Protocol [{res_json['tool_name']}] dispatch PASS (model: {res_json['model']}).")
+
+        print("[8/8] Autonomous Engine Execution Routing PASS for all tested Sovereign Protocols.")
+
+    await test_dynamic_fallback_and_discovery_engine()
+    print("\n>>> ALL 20 SOVEREIGN D2C COMMERCE INTEGRATION CHECKS & DYNAMIC ENGINE CHECKS PASSED WITH 100% SUCCESS! <<<")
 
 
 if __name__ == "__main__":

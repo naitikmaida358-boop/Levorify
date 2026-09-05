@@ -1,5 +1,7 @@
+import hashlib
 import json
 import logging
+import re
 import time
 from typing import Any, Dict, List, Optional
 import httpx
@@ -8,44 +10,259 @@ from app.core.config import settings
 
 logger = logging.getLogger("levorify.gemini_service")
 
-GEMINI_API_BASE = getattr(settings, "GEMINI_API_BASE", "https://generativelanguage.googleapis.com/v1beta")
-PRIMARY_MODELS = ["gemini-3.5-flash-lite", "gemini-1.5-flash"]
+# Dynamic discovery in-memory cache: hash(api_key) -> {"models": List[str], "expires_at": float}
+_DISCOVERY_CACHE: Dict[str, Dict[str, Any]] = {}
+CACHE_TTL_SECONDS = 600.0  # 10 minutes
+
+
+def _score_model_preference(model_name: str) -> float:
+    """
+    Dynamically scores a model name so the newest and most efficient
+    flash-lite, flash, and pro models rank highest, without hardcoding static model names.
+    Higher score = higher priority in dynamic execution chain.
+    """
+    name = model_name.lower().strip().replace("models/", "")
+
+    # Exclude non-chat generative models (embeddings, imagen, audio-only, aqa, etc.)
+    if any(excluded in name for excluded in ["embedding", "imagen", "aqa", "realtime", "learnlm"]):
+        return -1000.0
+
+    score = 0.0
+
+    # 1. Dynamic version extraction (e.g. 2.5 -> 250 pts, 2.0 -> 200 pts, 1.5 -> 150 pts, 3.0 -> 300 pts)
+    version_match = re.search(r"(\d+(?:\.\d+)?)", name)
+    if version_match:
+        try:
+            ver = float(version_match.group(1))
+            score += ver * 100.0
+        except ValueError:
+            pass
+
+    # 2. Preference hierarchy for sovereign D2C commerce tasks (ultra-fast / economical flash-lite first)
+    if "flash-lite" in name:
+        score += 60.0
+    elif "flash" in name:
+        score += 45.0
+    elif "pro" in name:
+        score += 30.0
+    elif "ultra" in name:
+        score += 15.0
+    elif "gemini" in name:
+        score += 10.0
+
+    # 3. Slight penalty for experimental / preview builds when stable releases exist
+    if "preview" in name or "exp" in name:
+        score -= 5.0
+
+    return score
+
+
+def _generate_pattern_fallback_models() -> List[str]:
+    """
+    Generates a dynamic pattern-based candidate chain if runtime discovery is unavailable.
+    Iterates modern Gemini model generations and tiers dynamically.
+    """
+    tiers = ["flash-lite", "flash", "pro"]
+    generations = ["2.5", "2.0", "1.5"]
+    fallback_list: List[str] = []
+    
+    # Priority: configured model first
+    configured = getattr(settings, "DEFAULT_GEMINI_MODEL", "gemini-2.5-flash-lite")
+    if configured:
+        fallback_list.append(configured.replace("models/", "").strip())
+
+    for gen in generations:
+        for tier in tiers:
+            candidate = f"gemini-{gen}-{tier}"
+            if candidate not in fallback_list:
+                fallback_list.append(candidate)
+
+    return fallback_list
 
 
 class GeminiBYOKService:
     """
-    High-Velocity Asynchronous Service executing AI prompts via dynamic BYOK.
-    Passes the user's individual Google Gemini API key to Google's endpoints,
-    ensuring Levorify incurs zero LLM runtime infrastructure costs.
+    Autonomous BYOK Gemini Service with Runtime Model Auto-Discovery and
+    Dynamic Self-Healing Fallback Engine.
+    
+    Eliminates hardcoded model strings: queries Google's available models at runtime,
+    dynamically scores and ranks discovered endpoints, and cascades through a resilient
+    fallback chain so execution never breaks with 404 errors.
     """
 
     @staticmethod
-    async def verify_key(api_key: str) -> Dict[str, Any]:
+    def _get_candidate_bases() -> List[str]:
+        configured_base = getattr(settings, "GEMINI_API_BASE", "https://generativelanguage.googleapis.com/v1beta")
+        candidate_bases = [
+            configured_base,
+            "https://generativelanguage.googleapis.com/v1beta",
+            "https://generativelanguage.googleapis.com/v1"
+        ]
+        return list(dict.fromkeys(candidate_bases))
+
+    @classmethod
+    async def discover_available_models(
+        cls,
+        api_key: str,
+        client: Optional[httpx.AsyncClient] = None
+    ) -> List[str]:
         """
-        Pings Google Gemini API with a lightweight test probe to verify key validity.
-        Uses active model gemini-3.5-flash-lite across v1beta and v1 endpoints.
-        Probes the canonical models collection (which verifies key permissions without
-        generating tokens) to guarantee key validation never fails with a 404 error.
+        Dynamically queries Google's Generative Language /models endpoint using the caller's key.
+        Filters for models supporting 'generateContent' and sorts them by dynamic preference.
+        Caches results in-memory with a 10-minute TTL.
+        """
+        clean_key = (api_key or "").strip()
+        if not clean_key:
+            return []
+
+        # Check cache
+        key_hash = hashlib.sha256(clean_key.encode("utf-8")).hexdigest()
+        now = time.time()
+        cached = _DISCOVERY_CACHE.get(key_hash)
+        if cached and cached["expires_at"] > now:
+            return cached["models"]
+
+        candidate_bases = cls._get_candidate_bases()
+        discovered_models: List[str] = []
+
+        should_close_client = False
+        if client is None:
+            client = httpx.AsyncClient(timeout=10.0)
+            should_close_client = True
+
+        try:
+            for base in candidate_bases:
+                try:
+                    res = await client.get(f"{base}/models", params={"key": clean_key})
+                    if res.status_code == 200:
+                        data = res.json()
+                        raw_models = data.get("models", [])
+                        
+                        # Filter models that support generateContent
+                        capable = [
+                            m.get("name", "").replace("models/", "").strip()
+                            for m in raw_models
+                            if "generateContent" in m.get("supportedGenerationMethods", [])
+                            and m.get("name")
+                        ]
+                        
+                        # Score and rank discovered models
+                        scored = sorted(
+                            [m for m in capable if _score_model_preference(m) > 0],
+                            key=_score_model_preference,
+                            reverse=True
+                        )
+                        
+                        if scored:
+                            discovered_models = scored
+                            logger.info(
+                                f"Auto-discovered {len(discovered_models)} capable models from Google runtime. "
+                                f"Top candidate: {discovered_models[0]}"
+                            )
+                            break
+                except httpx.RequestError as exc:
+                    logger.warning(f"Error querying models endpoint at {base}: {exc}")
+                    continue
+        finally:
+            if should_close_client:
+                await client.aclose()
+
+        if discovered_models:
+            _DISCOVERY_CACHE[key_hash] = {
+                "models": discovered_models,
+                "expires_at": now + CACHE_TTL_SECONDS
+            }
+
+        return discovered_models
+
+    @classmethod
+    async def get_prioritized_candidates(
+        cls,
+        api_key: str,
+        requested_model: Optional[str] = None,
+        client: Optional[httpx.AsyncClient] = None
+    ) -> List[str]:
+        """
+        Builds a robust, deduplicated candidate chain ordered by preference:
+        1. Explicit user/caller requested model (if any)
+        2. Configured default model from settings
+        3. Dynamically discovered capable models from Google's runtime API
+        4. Pattern-based fallback matrix
+        """
+        candidates: List[str] = []
+
+        # 1. Caller specified model
+        if requested_model:
+            clean_req = requested_model.replace("models/", "").strip()
+            if clean_req:
+                candidates.append(clean_req)
+
+        # 2. Configured model
+        configured = getattr(settings, "DEFAULT_GEMINI_MODEL", None)
+        if configured:
+            clean_cfg = configured.replace("models/", "").strip()
+            if clean_cfg and clean_cfg not in candidates:
+                candidates.append(clean_cfg)
+
+        # 3. Dynamic runtime discovery from Google
+        try:
+            discovered = await cls.discover_available_models(api_key, client=client)
+            for m in discovered:
+                if m not in candidates:
+                    candidates.append(m)
+        except Exception as exc:
+            logger.warning(f"Model auto-discovery encountered non-fatal error: {exc}")
+
+        # 4. Resilient pattern-based fallback
+        for pattern_model in _generate_pattern_fallback_models():
+            if pattern_model not in candidates:
+                candidates.append(pattern_model)
+
+        return candidates
+
+    @classmethod
+    async def verify_key(cls, api_key: str) -> Dict[str, Any]:
+        """
+        Verifies the validity of the user's Google Gemini API key.
+        Queries Google's canonical /models endpoint to validate authentication permissions
+        without spending generation tokens.
         """
         clean_key = (api_key or "").strip()
         if not clean_key:
             return {"valid": False, "message": "API key cannot be empty."}
 
-        candidate_bases = [
-            GEMINI_API_BASE,
-            "https://generativelanguage.googleapis.com/v1beta",
-            "https://generativelanguage.googleapis.com/v1"
-        ]
-        # Deduplicate preserving order
-        candidate_bases = list(dict.fromkeys(candidate_bases))
+        candidate_bases = cls._get_candidate_bases()
 
         async with httpx.AsyncClient(timeout=10.0) as client:
-            # 1. Primary probe: GET /models?key=...
-            # Canonical Google endpoint: returns 200 on valid key, 400/403 on invalid key, never 404.
+            # 1. Primary verification: GET /models?key=...
             for base in candidate_bases:
                 try:
                     res = await client.get(f"{base}/models", params={"key": clean_key})
                     if res.status_code == 200:
+                        # Auto-populate discovery cache from successful response
+                        data = res.json()
+                        raw_models = data.get("models", [])
+                        capable = [
+                            m.get("name", "").replace("models/", "").strip()
+                            for m in raw_models
+                            if "generateContent" in m.get("supportedGenerationMethods", [])
+                        ]
+                        scored = sorted(
+                            [m for m in capable if _score_model_preference(m) > 0],
+                            key=_score_model_preference,
+                            reverse=True
+                        )
+                        if scored:
+                            key_hash = hashlib.sha256(clean_key.encode("utf-8")).hexdigest()
+                            _DISCOVERY_CACHE[key_hash] = {
+                                "models": scored,
+                                "expires_at": time.time() + CACHE_TTL_SECONDS
+                            }
+                            top_model = scored[0]
+                            return {
+                                "valid": True,
+                                "message": f"Google Gemini API key verified. Auto-discovered {len(scored)} models (primary: {top_model})."
+                            }
                         return {"valid": True, "message": "Google Gemini API key verified and operational."}
                     elif res.status_code in (400, 403):
                         data = res.json()
@@ -54,15 +271,13 @@ class GeminiBYOKService:
                 except httpx.RequestError:
                     continue
 
-            # 2. Secondary probe: generateContent on active models
-            configured_model = (settings.DEFAULT_GEMINI_MODEL or "gemini-3.5-flash-lite").replace("models/", "").strip()
-            active_models = list(dict.fromkeys([configured_model, "gemini-3.5-flash-lite", "gemini-1.5-flash"]))
-
-            for base in candidate_bases:
-                for test_model in active_models:
+            # 2. Secondary fallback probe using candidate models
+            candidates = await cls.get_prioritized_candidates(clean_key, client=client)
+            for test_model in candidates[:3]:
+                for base in candidate_bases:
                     url = f"{base}/models/{test_model}:generateContent"
                     payload = {
-                        "contents": [{"parts": [{"text": "VALID"}]}],
+                        "contents": [{"parts": [{"text": "PING"}]}],
                         "generationConfig": {"maxOutputTokens": 5, "temperature": 0.0}
                     }
                     headers = {"Content-Type": "application/json"}
@@ -78,15 +293,15 @@ class GeminiBYOKService:
                             return {"valid": False, "message": f"Google Gemini rejected key: {err_msg}"}
                         elif response.status_code == 404:
                             continue
-                        else:
-                            return {"valid": False, "message": f"Provider responded with status {response.status_code}."}
                     except httpx.RequestError as exc:
-                        return {"valid": False, "message": f"Network error contacting Google Gemini: {str(exc)}"}
+                        logger.debug(f"Secondary probe error for {test_model}: {exc}")
+                        continue
 
             return {"valid": False, "message": "Google Gemini endpoint unreachable or key invalid."}
 
-    @staticmethod
+    @classmethod
     async def generate_d2c_content(
+        cls,
         api_key: str,
         system_instruction: str,
         prompt: str,
@@ -96,30 +311,25 @@ class GeminiBYOKService:
         response_schema: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
-        Executes a dynamic completion request against Google Gemini using the caller's key.
-        Sanitizes model names and endpoints to ensure zero 404 errors.
-        """
-        # Clean model name to prevent 404s (e.g. models/models/... or trailing whitespace)
-        raw_model = (model or settings.DEFAULT_GEMINI_MODEL or "gemini-3.5-flash-lite").replace("models/", "").strip()
-        selected_model = raw_model if raw_model else "gemini-3.5-flash-lite"
+        Executes an autonomous completion request against Google Gemini using the caller's BYOK key.
         
-        # Build candidate URLs in case of 404 on a specific endpoint or model
-        candidate_urls = [
-            f"{GEMINI_API_BASE}/models/{selected_model}:generateContent",
-            f"https://generativelanguage.googleapis.com/v1beta/models/{selected_model}:generateContent",
-            f"https://generativelanguage.googleapis.com/v1/models/{selected_model}:generateContent",
-            f"{GEMINI_API_BASE}/models/gemini-3.5-flash-lite:generateContent",
-            f"{GEMINI_API_BASE}/models/gemini-1.5-flash:generateContent",
-            f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent",
-        ]
-        candidate_urls = list(dict.fromkeys(candidate_urls))
+        Dynamically discovers models, iterates candidate fallback chains, and gracefully handles
+        endpoint migrations or deprecated models to ensure zero 404 errors.
+        """
+        clean_key = (api_key or "").strip()
+        if not clean_key:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Gemini BYOK key is missing or invalid."
+            )
+
+        candidate_bases = cls._get_candidate_bases()
         
         generation_config: Dict[str, Any] = {
             "temperature": temperature,
             "maxOutputTokens": max_output_tokens,
         }
         
-        # If structured JSON schema output is requested
         if response_schema:
             generation_config["responseMimeType"] = "application/json"
             generation_config["responseSchema"] = response_schema
@@ -135,84 +345,104 @@ class GeminiBYOKService:
             }
 
         headers = {"Content-Type": "application/json"}
-        params = {"key": api_key.strip()}
+        params = {"key": clean_key}
 
         start_time = time.perf_counter()
-        response = None
-        used_model = selected_model
+        response: Optional[httpx.Response] = None
+        successful_model: Optional[str] = None
+        last_error_detail: Optional[str] = None
 
         async with httpx.AsyncClient(timeout=30.0) as client:
-            for url in candidate_urls:
-                try:
-                    response = await client.post(url, headers=headers, json=payload, params=params)
-                    if response.status_code == 404:
-                        # Fallback to next endpoint or active model
+            # Build dynamic, prioritized candidate list
+            candidates = await cls.get_prioritized_candidates(
+                api_key=clean_key,
+                requested_model=model,
+                client=client
+            )
+
+            # Try candidate models across candidate base URLs
+            for candidate_model in candidates:
+                for base in candidate_bases:
+                    url = f"{base}/models/{candidate_model}:generateContent"
+                    try:
+                        res = await client.post(url, headers=headers, json=payload, params=params)
+                        
+                        if res.status_code == 200:
+                            response = res
+                            successful_model = candidate_model
+                            break
+                        elif res.status_code == 404:
+                            logger.info(
+                                f"Model '{candidate_model}' at '{base}' returned 404. "
+                                f"Dynamic engine cascading to next candidate..."
+                            )
+                            continue
+                        elif res.status_code in (400, 403):
+                            # Inspect error to see if it's model-specific vs auth
+                            try:
+                                err_json = res.json()
+                                msg = err_json.get("error", {}).get("message", "")
+                            except Exception:
+                                msg = res.text
+                            
+                            # If model is unsupported/not found for this version/endpoint, fall back
+                            if "not found" in msg.lower() or "unsupported" in msg.lower():
+                                logger.info(f"Model '{candidate_model}' reported unsupported: {msg}. Cascading...")
+                                continue
+                            
+                            # Otherwise, authentication or client payload error
+                            raise HTTPException(
+                                status_code=status.HTTP_400_BAD_REQUEST,
+                                detail=f"Gemini BYOK Key Error: {msg}"
+                            )
+                        elif res.status_code == 429:
+                            raise HTTPException(
+                                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                                detail="Gemini BYOK Quota Exceeded on your personal Google AI key. Please check your AI Studio limits."
+                            )
+                        elif res.status_code in (500, 502, 503, 504):
+                            # Upstream transient error on this model, try fallback
+                            logger.warning(f"Google Gemini upstream {res.status_code} on {candidate_model}. Cascading...")
+                            last_error_detail = f"Upstream error {res.status_code} on {candidate_model}"
+                            continue
+                        else:
+                            last_error_detail = f"Status {res.status_code} from provider"
+                            continue
+                    except httpx.TimeoutException:
+                        logger.warning(f"Timeout on {candidate_model} at {base}. Cascading...")
+                        last_error_detail = "Timeout contacting Google Gemini"
                         continue
+                    except httpx.RequestError as exc:
+                        logger.warning(f"Network error on {candidate_model} at {base}: {exc}")
+                        last_error_detail = str(exc)
+                        continue
+
+                if response is not None:
                     break
-                except httpx.TimeoutException:
-                    raise HTTPException(
-                        status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-                        detail="Google Gemini API request timed out after 30 seconds."
-                    )
-                except httpx.RequestError as exc:
-                    raise HTTPException(
-                        status_code=status.HTTP_502_BAD_GATEWAY,
-                        detail=f"Network error communicating with Google Gemini: {str(exc)}"
-                    )
 
         if response is None:
             raise HTTPException(
                 status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="Unable to reach Google Gemini endpoints."
+                detail=f"Unable to complete request across dynamic candidate models. Last error: {last_error_detail or 'No available endpoint responded'}"
             )
 
         latency_ms = round((time.perf_counter() - start_time) * 1000, 2)
-
-        if response.status_code != 200:
-            error_data = {}
-            try:
-                error_data = response.json()
-            except Exception:
-                error_data = {"raw": response.text}
-            
-            error_detail = error_data.get("error", {}).get("message", "Error returned from Google Gemini API.")
-            logger.error(f"Gemini API returned {response.status_code}: {error_detail}")
-            
-            if response.status_code in (400, 403):
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Gemini BYOK Key Error: {error_detail}"
-                )
-            elif response.status_code == 429:
-                raise HTTPException(
-                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    detail="Gemini BYOK Quota Exceeded on your personal Google AI key. Please check your AI Studio limits."
-                )
-            else:
-                raise HTTPException(
-                    status_code=status.HTTP_502_BAD_GATEWAY,
-                    detail=f"Gemini Upstream Error ({response.status_code}): {error_detail}"
-                )
-
         response_json = response.json()
-        
-        # Extract generated content text
-        candidates = response_json.get("candidates", [])
-        if not candidates:
+
+        candidates_data = response_json.get("candidates", [])
+        if not candidates_data:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="No generation candidates returned from Google Gemini."
             )
-            
-        first_candidate = candidates[0]
+
+        first_candidate = candidates_data[0]
         parts = first_candidate.get("content", {}).get("parts", [])
         raw_text = "".join(part.get("text", "") for part in parts)
-        
-        # Usage metadata
+
         usage = response_json.get("usageMetadata", {})
         total_tokens = usage.get("totalTokenCount", 0)
 
-        # Parse JSON if applicable
         parsed_result: Any = raw_text
         if response_schema:
             try:
@@ -221,7 +451,7 @@ class GeminiBYOKService:
                 parsed_result = {"raw_output": raw_text}
 
         return {
-            "model": selected_model,
+            "model": successful_model or "gemini-auto",
             "latency_ms": latency_ms,
             "total_tokens": total_tokens,
             "result": parsed_result

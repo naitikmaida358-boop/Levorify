@@ -55,7 +55,7 @@ class Settings(BaseSettings):
     ]
 
     # Google Gemini Direct Integration Defaults
-    DEFAULT_GEMINI_MODEL: str = "gemini-3.5-flash-lite"
+    DEFAULT_GEMINI_MODEL: str = "gemini-2.5-flash-lite"
     GEMINI_API_BASE: str = "https://generativelanguage.googleapis.com/v1beta"
 
 

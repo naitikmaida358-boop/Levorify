@@ -131,7 +131,7 @@
           
           <div id="key-status" class="mt-6 p-3.5 rounded-xl bg-slateNavy-900/80 border border-white/5 text-xs font-mono text-slate-400 flex items-center justify-between">
             <span>Status: <span id="key-status-text" class="text-amber-400">No active key linked</span></span>
-            <span class="text-[10px] text-slate-500">Gemini 1.5 Pro/Flash</span>
+            <span class="text-[10px] text-slate-500">Gemini 2.5 Flash Lite</span>
           </div>
         </div>
 
@@ -148,20 +148,39 @@
               <div>
                 <div class="flex items-center justify-between mb-1">
                   <label class="block text-xs font-mono text-slate-400">SELECT MODULE</label>
-                  <div class="flex gap-2">
-                    <button type="button" onclick="loadSamplePreset('rto_shield')" class="text-[10px] font-mono text-cyan-bright hover:underline">Sample RTO</button>
+                  <div class="flex gap-2 flex-wrap">
+                    <button type="button" onclick="loadSamplePreset('tool_1_trend_scout')" class="text-[10px] font-mono text-cyan-bright hover:underline">#1 Scout</button>
                     <span class="text-slate-600">|</span>
-                    <button type="button" onclick="loadSamplePreset('bundling')" class="text-[10px] font-mono text-cyan-bright hover:underline">Sample Bundle</button>
+                    <button type="button" onclick="loadSamplePreset('tool_2_price_bundling')" class="text-[10px] font-mono text-cyan-bright hover:underline">#2 Pricing</button>
                     <span class="text-slate-600">|</span>
-                    <button type="button" onclick="loadSamplePreset('research')" class="text-[10px] font-mono text-cyan-bright hover:underline">Sample Scout</button>
+                    <button type="button" onclick="loadSamplePreset('tool_6_unit_economics')" class="text-[10px] font-mono text-cyan-bright hover:underline">#6 Margin</button>
+                    <span class="text-slate-600">|</span>
+                    <button type="button" onclick="loadSamplePreset('tool_8_rto_shield')" class="text-[10px] font-mono text-cyan-bright hover:underline">#8 RTO</button>
+                    <span class="text-slate-600">|</span>
+                    <button type="button" onclick="loadSamplePreset('tool_20_exit_strategist')" class="text-[10px] font-mono text-cyan-bright hover:underline">#20 Exit</button>
                   </div>
                 </div>
-                <select id="tool-type" onchange="handleModuleChange()" class="w-full bg-slateNavy-900 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-cyan-neon outline-none">
-                  <option value="rto_shield">Tool #8: RTO & COD Risk Shield (Fraud & Return Mitigation)</option>
-                  <option value="bundling">Tool #2: Dynamic AOV Bundling Matrix (Algorithmic Margin Capture)</option>
-                  <option value="research">Tool #14: Alpha Product Trend Scout (Arbitrage & Sourcing Heat)</option>
-                  <option value="product-description">Tool #1: High-Velocity Sensory Product Copy (Conversion Engine)</option>
-                  <option value="ad-copy">Tool #5: Omni-Channel ROAS Ad Matrix (Meta, Google, TikTok)</option>
+                <select id="tool-type" onchange="handleModuleChange()" class="w-full bg-slateNavy-900 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-cyan-neon outline-none font-mono">
+                  <option value="tool_1_trend_scout">Tool #1: Autonomous Product Research & Trend Scout</option>
+                  <option value="tool_2_price_bundling">Tool #2: Dynamic Price Anchoring & Bundling Matrix</option>
+                  <option value="tool_3_ad_copy">Tool #3: High-Velocity Ad Copy & Creative Generator</option>
+                  <option value="tool_4_video_script">Tool #4: Faceless Video Script & Hook Architecture</option>
+                  <option value="tool_5_cro_audit">Tool #5: D2C Store Conversion Rate Optimization (CRO) Audit</option>
+                  <option value="tool_6_unit_economics">Tool #6: Automated Profit Margin & Unit Economics Calculator</option>
+                  <option value="tool_7_competitor_intelligence">Tool #7: Competitor Price Scraping & Intelligence Shield</option>
+                  <option value="tool_8_rto_shield">Tool #8: RTO & COD Risk Shield (Fraud & Return Mitigation)</option>
+                  <option value="tool_9_retention_flow">Tool #9: WhatsApp & SMS Lifecycle Retention Flow Builder</option>
+                  <option value="tool_10_roas_scaler">Tool #10: Multi-Channel Attribution & ROAS Scaler</option>
+                  <option value="tool_11_inventory_guard">Tool #11: Inventory Demand Forecasting & Stockout Guard</option>
+                  <option value="tool_12_affiliate_outreach">Tool #12: Influencer Micro-Affiliate Outreach Engine</option>
+                  <option value="tool_13_marketplace_optimizer">Tool #13: Marketplace Listing Optimizer (Amazon/Flipkart)</option>
+                  <option value="tool_14_dispute_automator">Tool #14: Refund & Chargeback Dispute Automator</option>
+                  <option value="tool_15_supply_chain_router">Tool #15: Zero-Markup Global Supply Chain Router</option>
+                  <option value="tool_16_email_recovery">Tool #16: Automated Email Sequence & Abandoned Cart Recovery</option>
+                  <option value="tool_17_ugc_brief">Tool #17: UGC Creative Brief & Creator Persona Synthesizer</option>
+                  <option value="tool_18_social_proof">Tool #18: Brand Trust & Social Proof Multiplier</option>
+                  <option value="tool_19_flash_sale">Tool #19: Seasonal Flash Sale & Discount Architecture</option>
+                  <option value="tool_20_exit_strategist">Tool #20: Sovereign D2C Scale Roadmap & Exit Strategist</option>
                 </select>
               </div>
               <div>
@@ -221,14 +240,39 @@
   </main>
 
   <script>
-    const API_BASE_URL = 'https://levorify.onrender.com';
+    const API_BASE_URL = (window.location && window.location.origin && window.location.origin.startsWith('http'))
+      ? (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+          ? window.location.origin
+          : 'https://levorify.onrender.com')
+      : 'https://levorify.onrender.com';
     let authToken = localStorage.getItem('levorify_token') || '';
     let isRegisterMode = false;
     let currentUser = null;
 
     const samplePresets = {
+      tool_1_trend_scout: "Category: Ergonomic desk accessories & titanium EDC gadgets. Target landed COGS: under $12. Retail potential: $49-$79. Evaluate trend velocity, competitive moat, and rapid validation launch plan.",
+      tool_2_price_bundling: "Primary SKU: Lumina Hydro-Serum (Retail ₹1,499, COGS ₹280). Cross-sells: Ceramide Barrier Mist (Retail ₹799, COGS ₹140), Peptide Night Mask (Retail ₹1,899, COGS ₹320). Architect a 3-tier high-converting bundle matrix.",
+      tool_3_ad_copy: "Product: Obsidian Cold Brew Tumbler (Vacuum insulated, titanium finish, 24hr ice lock). Target: Remote tech workers and fitness professionals. Current promotion: 20% off launch bundle. Generate multi-channel high-CTR ad copy.",
+      tool_4_video_script: "Product: Anti-Blue Light Glare Shield for Dual Monitor setups. Problem: Eyestrain and sleep disruption for developers and traders. Create a 30-second faceless viral TikTok/Reels video script with visual cue breakdown.",
+      tool_5_cro_audit: "Store: Premium activewear brand. Current Metrics: 120,000 monthly visitors, 1.4% CR, $82 AOV, 68% mobile drop-off at cart stage. Product page features 4 hero images, standard Shopify buy button, and customer reviews below fold. Run full forensic CRO audit.",
+      tool_6_unit_economics: "Selling Price: ₹2,499. Manufacturing/Landed COGS: ₹480. Shipping/Fulfillment: ₹180. Return/RTO Rate: 18%. Payment Gateway fee: 2%. Meta Ad Spend: ₹45,000 generating 50 orders (CAC ₹900). Compute granular unit economics waterfall and break-even ROAS.",
+      tool_7_competitor_intelligence: "Target Brand: Artisan organic matcha powder ($38 for 100g). Primary Competitors: Competitor A ($29 with subscribe & save 15%), Competitor B ($44 luxury Japanese origin). Analyze positioning, value gaps, and recommend an asymmetric price defense strategy.",
+      tool_8_rto_shield: "Order Telemetry: PIN 110025 (New Delhi), Payment Method: COD, Cart Value: ₹3,850, SKU: Sovereign Leather Duffel, Customer History: 1 previous return, Order Time: 02:40 AM, IP Location: Outer Delhi. Assess RTO risk and recommend sovereign mitigation protocol.",
+      tool_9_retention_flow: "Brand: Clean nutritional supplements (30-day supply probiotic greens, ₹1,899). Customer: First-time purchaser. Build complete 45-day WhatsApp & SMS post-purchase retention sequence to drive replenishment and 90-day subscription.",
+      tool_10_roas_scaler: "Monthly Ad Spend: Meta Ads ₹3,50,000 (Reported ROAS 2.1x), Google Search ₹1,80,000 (Reported ROAS 4.2x), YouTube Ads ₹90,000 (Reported ROAS 1.1x). Total Store Revenue: ₹14,20,000 (Blended MER 2.29x). Provide true attribution diagnosis and scaling budget allocation.",
+      tool_11_inventory_guard: "SKU: Hydro-Serum 50ml. Current Warehouse Stock: 1,450 units. Daily Sales Velocity: 65 units/day (trending up 15% WoW). Factory Lead Time: 28 days. Shipping/Customs: 10 days. Minimum order quantity (MOQ): 2,000 units. Calculate ROP and recommend immediate reorder schedule.",
+      tool_12_affiliate_outreach: "Product: Cold Brew Titanium Tumbler ($49). Target Creators: Coffee aficionados, productivity creators, and desk-setup vloggers on Instagram & TikTok (10k-50k followers). Design a high-response outreach pitch and performance affiliate commission deal.",
+      tool_13_marketplace_optimizer: "Product: Ergonomic Memory Foam Lumbar Support Cushion for Office Chairs. Target Marketplace: Amazon & Flipkart. Current ranking: Page 4 for 'lumbar support'. Optimize title, 5 bullet points, and backend search terms.",
+      tool_14_dispute_automator: "Dispute Code: 'Product Not Received' / Friendly Fraud on Stripe. Order Amount: $185. Tracking shows carrier delivery confirmed with GPS coordinate match and front-door photo. Customer opened chargeback 2 days after delivery. Draft formal bank rebuttal package.",
+      tool_15_supply_chain_router: "Product: Stainless steel insulated water bottle with silicone grip. Target volume: 5,000 units per quarter. Factory FOB quote: $3.40/unit (Ningbo, China). Destination: Dallas, TX 3PL. Evaluate ocean freight vs air expedited, duty estimates, and landed cost optimization.",
+      tool_16_email_recovery: "Brand: Premium artisanal leather travel bags ($240-$450). Problem: 71% cart abandonment rate. Create a 3-part abandoned checkout email sequence that preserves luxury brand equity without giving away immediate margin-eroding discounts.",
+      tool_17_ugc_brief: "Product: Botanical Scalp Detox Oil for thinning hair ($34). Target Creator: Women aged 25-40 showing realistic haircare routines. Create 2 production-ready UGC briefs with scripted hooks, b-roll directions, and specific visual demonstration steps.",
+      tool_18_social_proof: "New D2C Brand: Science-backed sleep supplement launched 60 days ago with 250 orders. Low initial brand recognition and skepticism around effectiveness. Architect a comprehensive social proof multiplier strategy to elevate on-site conversion.",
+      tool_19_flash_sale: "Event: 72-Hour Monsoon / Autumn Flash Sale. Goal: Liquidate ₹8,00,000 in seasonal apparel inventory while protecting brand prestige. Current margin: 68%. Architect promotional structure, timeline, and urgent marketing copy.",
+      tool_20_exit_strategist: "Current Brand Metrics: ₹6.5 Crore annual revenue, 22% EBITDA margin, 65% revenue from own Shopify store, 35% Amazon. 3-person core team. Founder aims for strategic exit or PE growth round in 18-24 months. Provide comprehensive Sovereign Scale Roadmap and Exit Valuation blueprint.",
+      // Backwards-compatible legacy aliases
       rto_shield: "Order Telemetry: PIN 110025 (New Delhi), Payment Method: COD, Cart Value: ₹3,850, SKU: Sovereign Leather Duffel, Customer History: 1 previous cancel, Time of Order: 02:40 AM. Assess RTO risk & suggest action.",
-      bundling: "Primary Product: Lumina Hydro-Serum (₹1,499, 78% margin). Cross-sell Candidates: Ceramide Barrier Mist (₹799), Peptide Night Recovery Cream (₹1,899). Design tiered high-AOV bundle architecture.",
+      bundling: "Primary Product: Lumina Hydro-Serum (Retail ₹1,499, 78% margin). Cross-sell Candidates: Ceramide Barrier Mist (₹799), Peptide Night Recovery Cream (₹1,899). Design tiered high-AOV bundle architecture.",
       research: "Product Category: High-end ergonomic titanium desk accessories. Sourcing target: Under $12 landed. Current market retail: $48-$75. Analyze trend velocity, viral hooks, and validation sprint.",
       "product-description": "Product: Sovereign Obsidian Cold Brew Tumbler (Vacuum insulated, titanium-coated double wall, 24-hr ice lock, leakproof magnetic lid). Target audience: Tech executives & remote founders.",
       "ad-copy": "Product: Lumina Hydro-Serum. Offer: Launch 20% off with code SOVEREIGN20. Target: Premium skincare buyers tired of sticky hyaluronic acid formulas. Channels: Meta, Google, TikTok."
@@ -481,11 +525,15 @@
         if (!res.ok) throw new Error(data.detail || 'Execution failed');
 
         // Render structured output
-        formattedOutput.innerText = data.result;
-        document.getElementById('meta-model').innerText = `Model: ${data.model || 'Gemini 1.5'}`;
-        document.getElementById('meta-latency').innerText = `Latency: ${data.latency_ms?.toFixed(1) || '--'} ms`;
+        if (typeof data.result === 'object') {
+          formattedOutput.innerText = JSON.stringify(data.result, null, 2);
+        } else {
+          formattedOutput.innerText = data.result;
+        }
+        document.getElementById('meta-model').innerText = `Model: ${data.model || 'gemini-2.5-flash-lite'}`;
+        document.getElementById('meta-latency').innerText = `Latency: ${data.latency_ms ? data.latency_ms.toFixed(1) : '--'} ms`;
 
-        logToTerminal(`[SUCCESS] Execution completed in ${data.latency_ms?.toFixed(1) || 0}ms.`);
+        logToTerminal(`[SUCCESS] Protocol [${data.tool_name || toolType}] executed via ${data.model || 'gemini-2.5-flash-lite'} in ${data.latency_ms ? data.latency_ms.toFixed(1) : 0}ms.`);
         status.innerText = 'Execution completed successfully.';
         status.className = 'text-xs font-mono text-emerald-400';
       } catch (err) {
